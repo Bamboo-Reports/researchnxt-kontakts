@@ -87,6 +87,21 @@ export interface AvailableOptions {
   prospectCountries: FilterOption[]
 }
 
+export interface BlankCounts {
+  prospectAccountNames: number
+  prospectRnxtDataTypes: number
+  prospectProjectNames: number
+  prospectDupeStatuses: number
+  prospectSfTalStatuses: number
+  prospectSfIndustries: number
+  prospectContactsTypes: number
+  prospectDepartments: number
+  prospectLevels: number
+  prospectOptizmoSuppressions: number
+  prospectCities: number
+  prospectCountries: number
+}
+
 export interface ChartData {
   name: string
   value: number

@@ -9,13 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EnhancedMultiSelect } from "@/components/enhanced-multi-select"
 import { SavedFiltersManager } from "@/components/saved-filters-manager"
-import type { Filters, AvailableOptions, FilterValue } from "@/lib/types"
+import type { Filters, AvailableOptions, BlankCounts, FilterValue } from "@/lib/types"
 
 interface FiltersSidebarProps {
   filters: Filters
   pendingFilters: Filters
   availableOptions: AvailableOptions
-  isApplying: boolean
+  blankCounts: BlankCounts
   setPendingFilters: React.Dispatch<React.SetStateAction<Filters>>
   resetFilters: () => void
   handleExportProspects: () => void
@@ -27,14 +27,13 @@ export function FiltersSidebar({
   filters,
   pendingFilters,
   availableOptions,
-  isApplying,
+  blankCounts,
   setPendingFilters,
   resetFilters,
   handleExportProspects,
   getTotalActiveFilters,
   handleLoadSavedFilters,
 }: FiltersSidebarProps) {
-  const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const valueFilters = [
     {
       key: "prospectAccountNames",
@@ -150,32 +149,34 @@ export function FiltersSidebar({
               const selected = pendingFilters[filterConfig.key] as FilterValue[]
               const includeBlank = pendingFilters[filterConfig.includeBlankKey] as boolean
               const options = availableOptions[filterConfig.optionsKey] || []
+              const blankCount = blankCounts[filterConfig.optionsKey] || 0
+              const showIncludeBlanks = includeBlank || blankCount > 0
               return (
                 <div className="space-y-2" key={filterConfig.key}>
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium">{filterConfig.label}</Label>
-                    <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                      <Checkbox
-                        checked={includeBlank}
-                        onCheckedChange={(checked) =>
-                          setPendingFilters((prev) => ({
-                            ...prev,
-                            [filterConfig.includeBlankKey]: checked === true,
-                          }))
-                        }
-                      />
-                      <span>Include blanks</span>
-                    </label>
+                    {showIncludeBlanks && (
+                      <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <Checkbox
+                          checked={includeBlank}
+                          onCheckedChange={(checked) =>
+                            setPendingFilters((prev) => ({
+                              ...prev,
+                              [filterConfig.includeBlankKey]: checked === true,
+                            }))
+                          }
+                        />
+                        <span>Include blanks</span>
+                      </label>
+                    )}
                   </div>
                   <EnhancedMultiSelect
                     options={options}
                     selected={selected}
                     onChange={(nextSelected) => {
                       setPendingFilters((prev) => ({ ...prev, [filterConfig.key]: nextSelected }))
-                      setActiveFilter(filterConfig.key)
                     }}
                     placeholder={filterConfig.placeholder}
-                    isApplying={isApplying && activeFilter === filterConfig.key}
                   />
                 </div>
               )
