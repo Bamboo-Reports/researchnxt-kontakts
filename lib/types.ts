@@ -39,13 +39,31 @@ export interface FilterValue {
 }
 
 export interface Filters {
+  prospectAccountNames: FilterValue[]
+  prospectRnxtDataTypes: FilterValue[]
+  prospectProjectNames: FilterValue[]
+  prospectDupeStatuses: FilterValue[]
+  prospectSfTalStatuses: FilterValue[]
+  prospectSfIndustries: FilterValue[]
+  prospectContactsTypes: FilterValue[]
   prospectDepartments: FilterValue[]
   prospectLevels: FilterValue[]
+  prospectOptizmoSuppressions: FilterValue[]
   prospectCities: FilterValue[]
+  prospectCountries: FilterValue[]
   prospectTitleKeywords: FilterValue[]
+  includeBlankAccountNames: boolean
+  includeBlankRnxtDataTypes: boolean
+  includeBlankProjectNames: boolean
+  includeBlankDupeStatuses: boolean
+  includeBlankSfTalStatuses: boolean
+  includeBlankSfIndustries: boolean
+  includeBlankContactsTypes: boolean
   includeBlankDepartments: boolean
   includeBlankLevels: boolean
+  includeBlankOptizmoSuppressions: boolean
   includeBlankCities: boolean
+  includeBlankCountries: boolean
 }
 
 export interface FilterOption {
@@ -55,9 +73,18 @@ export interface FilterOption {
 }
 
 export interface AvailableOptions {
+  prospectAccountNames: FilterOption[]
+  prospectRnxtDataTypes: FilterOption[]
+  prospectProjectNames: FilterOption[]
+  prospectDupeStatuses: FilterOption[]
+  prospectSfTalStatuses: FilterOption[]
+  prospectSfIndustries: FilterOption[]
+  prospectContactsTypes: FilterOption[]
   prospectDepartments: FilterOption[]
   prospectLevels: FilterOption[]
+  prospectOptizmoSuppressions: FilterOption[]
   prospectCities: FilterOption[]
+  prospectCountries: FilterOption[]
 }
 
 export interface ChartData {
