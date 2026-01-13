@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useEffect, useLayoutEffect, useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/layout/header"
 import { FiltersSidebar } from "@/components/filters/filters-sidebar"
@@ -8,7 +8,7 @@ import { SummaryCards } from "@/components/dashboard/summary-cards"
 import { ProspectsTab } from "@/components/tabs/prospects-tab"
 import { LoadingState } from "@/components/states/loading-state"
 import { ErrorState } from "@/components/states/error-state"
-import { getAllData, testConnection, getDatabaseStatus, clearCache } from "./actions"
+import { getProspects, getCounts, getFilterOptions, testConnection, getDatabaseStatus, clearCache } from "./actions"
 import { exportToExcel } from "@/lib/utils/export-helpers"
 import type { Prospect, Filters, AvailableOptions } from "@/lib/types"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
@@ -16,11 +16,14 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 function DashboardContent() {
   const router = useRouter()
   const [prospects, setProspects] = useState<Prospect[]>([])
-  const [loading, setLoading] = useState(true)
+  const [pageLoading, setPageLoading] = useState(true)
+  const [filterLoading, setFilterLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<string>("")
   const [dbStatus, setDbStatus] = useState<any>(null)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const [connectionChecked, setConnectionChecked] = useState(false)
+  const connectionCheckRef = useRef<Promise<boolean> | null>(null)
   const [availableOptions, setAvailableOptions] = useState<AvailableOptions>({
     prospectAccountNames: [],
     prospectRnxtDataTypes: [],
@@ -95,7 +98,9 @@ function DashboardContent() {
   const [itemsPerPage] = useState(50)
   const [authReady, setAuthReady] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const isApplying = loading && hasLoadedOnce
+  const isApplying = filterLoading && hasLoadedOnce
+  const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const previousFiltersRef = useRef<Filters | null>(null)
 
   const checkDatabaseStatus = useCallback(async () => {
     try {
@@ -121,26 +126,29 @@ function DashboardContent() {
     }
   }, [])
 
-  const loadData = useCallback(async () => {
-    console.time("dashboard loadData total")
-    try {
-      setLoading(true)
-      setError(null)
-      setConnectionStatus("Checking database configuration...")
+  const ensureConnection = useCallback(async () => {
+    if (connectionChecked) return true
+    if (connectionCheckRef.current) return connectionCheckRef.current
 
+    connectionCheckRef.current = (async () => {
+      setConnectionStatus("Checking database configuration...")
       console.time("dashboard checkDatabaseStatus")
       const status = await checkDatabaseStatus()
       console.timeEnd("dashboard checkDatabaseStatus")
+      setDbStatus(status)
+
       if (status && !status.hasUrl) {
         setError("Database URL not configured. Please check environment variables.")
         setConnectionStatus("Database URL missing")
-        return
+        connectionCheckRef.current = null
+        return false
       }
 
       if (status && !status.hasConnection) {
         setError("Database connection could not be initialized.")
         setConnectionStatus("Connection initialization failed")
-        return
+        connectionCheckRef.current = null
+        return false
       }
 
       setConnectionStatus("Testing database connection...")
@@ -149,28 +157,80 @@ function DashboardContent() {
       console.timeEnd("dashboard testDatabaseConnection")
       if (!connectionOk) {
         setError("Database connection test failed. Please check your database configuration.")
-        return
+        connectionCheckRef.current = null
+        return false
       }
 
+      setConnectionChecked(true)
+      connectionCheckRef.current = null
+      return true
+    })()
+
+    return connectionCheckRef.current
+  }, [checkDatabaseStatus, testDatabaseConnection, connectionChecked])
+
+  const loadPageData = useCallback(async () => {
+    console.time("dashboard loadPageData total")
+    try {
+      setPageLoading(true)
+      setError(null)
+
+      const connectionOk = await ensureConnection()
+      if (!connectionOk) return
+
       setConnectionStatus("Loading prospects from database...")
-      console.time("dashboard getAllData")
-      const data = await getAllData({
+      console.time("dashboard getProspects")
+      const prospectsData = await getProspects({
         page: currentPage,
         pageSize: itemsPerPage,
         filters,
       })
-      console.timeEnd("dashboard getAllData")
+      console.timeEnd("dashboard getProspects")
 
-      if (data.error) {
-        setError(`Database error: ${data.error}`)
-        setConnectionStatus("Data loading failed")
+      const normalizedProspects = Array.isArray(prospectsData) ? prospectsData : []
+      setProspects(normalizedProspects as Prospect[])
+      setConnectionStatus(`Successfully loaded: ${normalizedProspects.length} prospects`)
+      setHasLoadedOnce(true)
+    } catch (err) {
+      console.error("Error loading page data:", err)
+      const errorMessage = err instanceof Error ? err.message : "Failed to load data from database"
+      setError(errorMessage)
+      setConnectionStatus("Database connection failed")
+    } finally {
+      setPageLoading(false)
+      console.timeEnd("dashboard loadPageData total")
+    }
+  }, [currentPage, itemsPerPage, filters, ensureConnection])
+
+  const loadFilterData = useCallback(async () => {
+    console.time("dashboard loadFilterData total")
+    try {
+      setFilterLoading(true)
+      const connectionOk = await ensureConnection()
+      if (!connectionOk) return
+
+      setConnectionStatus("Loading filters and counts...")
+      const [counts, options] = await Promise.all([
+        getCounts({ filters }),
+        getFilterOptions({ filters }),
+      ])
+
+      if (counts.error) {
+        setError(`Database error: ${counts.error}`)
+        setConnectionStatus("Counts loading failed")
         return
       }
 
-      const prospectsData = Array.isArray(data.prospects) ? data.prospects : []
-      setProspects(prospectsData as Prospect[])
+      if (options.error) {
+        setError(`Database error: ${options.error}`)
+        setConnectionStatus("Filter options loading failed")
+        return
+      }
+
+      setFilteredCount(counts.filteredCount ?? 0)
+      setTotalCount(counts.totalCount ?? 0)
       setAvailableOptions(
-        data.availableOptions || {
+        options.availableOptions || {
           prospectAccountNames: [],
           prospectRnxtDataTypes: [],
           prospectProjectNames: [],
@@ -185,20 +245,16 @@ function DashboardContent() {
           prospectCountries: [],
         }
       )
-      setFilteredCount(data.filteredCount ?? 0)
-      setTotalCount(data.totalCount ?? 0)
-      setConnectionStatus(`Successfully loaded: ${prospectsData.length} prospects`)
-      setHasLoadedOnce(true)
     } catch (err) {
-      console.error("Error loading data:", err)
+      console.error("Error loading filter data:", err)
       const errorMessage = err instanceof Error ? err.message : "Failed to load data from database"
       setError(errorMessage)
       setConnectionStatus("Database connection failed")
     } finally {
-      setLoading(false)
-      console.timeEnd("dashboard loadData total")
+      setFilterLoading(false)
+      console.timeEnd("dashboard loadFilterData total")
     }
-  }, [checkDatabaseStatus, testDatabaseConnection, currentPage, itemsPerPage, filters])
+  }, [filters, ensureConnection])
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
@@ -234,28 +290,54 @@ function DashboardContent() {
 
   useEffect(() => {
     if (!authReady || !userId) return
-    loadData()
-  }, [authReady, userId, loadData])
+    loadFilterData()
+  }, [authReady, userId, filters, loadFilterData])
 
-  useLayoutEffect(() => {
-    setFilters(pendingFilters)
+  useEffect(() => {
+    if (!authReady || !userId) return
+    const filtersChanged = previousFiltersRef.current !== filters
+    if (filtersChanged) {
+      previousFiltersRef.current = filters
+      if (currentPage !== 1) {
+        setCurrentPage(1)
+        return
+      }
+    }
+    loadPageData()
+  }, [authReady, userId, filters, currentPage, loadPageData])
+
+  useEffect(() => {
+    if (filterDebounceRef.current) {
+      clearTimeout(filterDebounceRef.current)
+    }
+    filterDebounceRef.current = setTimeout(() => {
+      setFilters(pendingFilters)
+    }, 300)
+
+    return () => {
+      if (filterDebounceRef.current) {
+        clearTimeout(filterDebounceRef.current)
+      }
+    }
   }, [pendingFilters])
 
   const handleClearCache = async () => {
     try {
       setConnectionStatus("Clearing cache...")
       await clearCache()
-      await loadData()
+      await loadFilterData()
+      await loadPageData()
     } catch (err) {
       console.error("Error clearing cache:", err)
       setError("Failed to clear cache")
     }
   }
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [filters])
-
+  const handleRetry = useCallback(async () => {
+    setError(null)
+    await loadFilterData()
+    await loadPageData()
+  }, [loadFilterData, loadPageData])
 
   const getTotalActiveFilters = () => {
     return (
@@ -328,23 +410,23 @@ function DashboardContent() {
     setFilters(emptyFilters)
   }
 
-  const dataLoaded = !loading || hasLoadedOnce
+  const dataLoaded = !pageLoading || hasLoadedOnce
 
   if (!authReady || !userId) {
     return null
   }
 
-  if (loading && !hasLoadedOnce) {
+  if ((pageLoading || filterLoading) && !hasLoadedOnce) {
     return <LoadingState connectionStatus={connectionStatus} dbStatus={dbStatus} />
   }
 
   if (error) {
-    return <ErrorState error={error} dbStatus={dbStatus} onRetry={loadData} onClearCache={handleClearCache} />
+    return <ErrorState error={error} dbStatus={dbStatus} onRetry={handleRetry} onClearCache={handleClearCache} />
   }
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <Header onRefresh={loadData} />
+      <Header onRefresh={handleRetry} />
 
       {dataLoaded && (
         <div className="flex flex-1 overflow-hidden">
@@ -374,7 +456,7 @@ function DashboardContent() {
                   setCurrentPage={setCurrentPage}
                   itemsPerPage={itemsPerPage}
                   filteredCount={filteredCount}
-                  isApplying={isApplying}
+                  isPageLoading={pageLoading}
                 />
               </div>
             </div>

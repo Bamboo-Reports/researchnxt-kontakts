@@ -74,6 +74,10 @@ type DataQueryParams = {
   filters?: Filters
 }
 
+type FilterQueryParams = {
+  filters?: Filters
+}
+
 const normalizeFilters = (filters?: Filters): Filters => ({
   prospectAccountNames: filters?.prospectAccountNames ?? [],
   prospectRnxtDataTypes: filters?.prospectRnxtDataTypes ?? [],
@@ -212,17 +216,55 @@ export async function getProspects({ page = 1, pageSize = DEFAULT_PAGE_SIZE, fil
   }
 }
 
-export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filters }: DataQueryParams = {}) {
+export async function getCounts({ filters }: FilterQueryParams = {}) {
   try {
-    console.time("getAllData total")
-    console.log("Starting to fetch prospects from database...")
+    if (!process.env.DATABASE_URL) {
+      console.error("DATABASE_URL environment variable is not set")
+      return { filteredCount: 0, totalCount: 0, error: "Database configuration missing" }
+    }
 
+    if (!sql) {
+      console.error("Database connection not initialized")
+      return { filteredCount: 0, totalCount: 0, error: "Database connection failed" }
+    }
+
+    const normalizedFilters = normalizeFilters(filters)
+    const { whereClause, params } = buildFilterQuery(normalizedFilters)
+    const filteredCountCacheKey = `filtered_count:${JSON.stringify(normalizedFilters)}`
+    const cachedFilteredCount = getCachedData<number>(filteredCountCacheKey)
+
+    let filteredCount = cachedFilteredCount ?? 0
+    if (cachedFilteredCount == null) {
+      const countQuery = `SELECT COUNT(*)::int AS count FROM rnxt_db ${whereClause}`
+      const filteredCountRows = await fetchWithRetry(() => sql.query(countQuery, params))
+      filteredCount = filteredCountRows?.[0]?.count ?? 0
+      setCachedData(filteredCountCacheKey, filteredCount)
+    }
+
+    const totalCountCacheKey = "total_count"
+    let totalCount = getCachedData<number>(totalCountCacheKey)
+    if (totalCount == null) {
+      const totalCountRows = await fetchWithRetry(() => sql.query("SELECT COUNT(*)::int AS count FROM rnxt_db"))
+      totalCount = totalCountRows?.[0]?.count ?? 0
+      setCachedData(totalCountCacheKey, totalCount)
+    }
+
+    return { filteredCount, totalCount, error: null }
+  } catch (error) {
+    console.error("Error fetching counts:", error)
+    return {
+      filteredCount: 0,
+      totalCount: 0,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    }
+  }
+}
+
+export async function getFilterOptions({ filters }: FilterQueryParams = {}) {
+  try {
     if (!process.env.DATABASE_URL) {
       console.error("DATABASE_URL environment variable is not set")
       return {
-        prospects: [],
-        filteredCount: 0,
-        totalCount: 0,
         availableOptions: {
           prospectAccountNames: [],
           prospectRnxtDataTypes: [],
@@ -244,9 +286,6 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
     if (!sql) {
       console.error("Database connection not initialized")
       return {
-        prospects: [],
-        filteredCount: 0,
-        totalCount: 0,
         availableOptions: {
           prospectAccountNames: [],
           prospectRnxtDataTypes: [],
@@ -265,35 +304,13 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
       }
     }
 
-    const safePageSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE)
-    const safePage = Math.max(page, 1)
     const normalizedFilters = normalizeFilters(filters)
     const { whereClause, params } = buildFilterQuery(normalizedFilters)
-    const cacheKey = `all_data:${safePage}:${safePageSize}:${JSON.stringify(normalizedFilters)}`
-    const cached = getCachedData(cacheKey)
+    const cacheKey = `filter_options:${JSON.stringify(normalizedFilters)}`
+    const cached = getCachedData<any>(cacheKey)
     if (cached) {
-      console.log("Returning all data from cache")
+      console.log("Returning filter options from cache")
       return cached
-    }
-
-    console.time("getAllData prospects")
-    const prospects = await getProspects({
-      page: safePage,
-      pageSize: safePageSize,
-      filters: normalizedFilters,
-    })
-    console.timeEnd("getAllData prospects")
-
-    const countQuery = `SELECT COUNT(*)::int AS count FROM rnxt_db ${whereClause}`
-    const filteredCountRows = await fetchWithRetry(() => sql.query(countQuery, params))
-    const filteredCount = filteredCountRows?.[0]?.count ?? 0
-
-    const totalCountCacheKey = "total_count"
-    let totalCount = getCachedData<number>(totalCountCacheKey)
-    if (totalCount == null) {
-      const totalCountRows = await fetchWithRetry(() => sql.query("SELECT COUNT(*)::int AS count FROM rnxt_db"))
-      totalCount = totalCountRows?.[0]?.count ?? 0
-      setCachedData(totalCountCacheKey, totalCount)
     }
 
     const accountNameQuery = `
@@ -380,6 +397,7 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
       GROUP BY country
       ORDER BY count DESC
     `
+
     const [
       accountNameCounts,
       rnxtDataTypeCounts,
@@ -408,16 +426,7 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
       fetchWithRetry(() => sql.query(countryQuery, params)),
     ])
 
-    console.log("Successfully fetched prospects:", {
-      prospects: prospects.length,
-      filteredCount,
-      totalCount,
-    })
-
-    const allData = {
-      prospects,
-      filteredCount,
-      totalCount,
+    const allOptions = {
       availableOptions: {
         prospectAccountNames: accountNameCounts ?? [],
         prospectRnxtDataTypes: rnxtDataTypeCounts ?? [],
@@ -433,6 +442,118 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
         prospectCountries: countryCounts ?? [],
       },
       error: null,
+    }
+
+    setCachedData(cacheKey, allOptions)
+    return allOptions
+  } catch (error) {
+    console.error("Error fetching filter options:", error)
+    return {
+      availableOptions: {
+        prospectAccountNames: [],
+        prospectRnxtDataTypes: [],
+        prospectProjectNames: [],
+        prospectDupeStatuses: [],
+        prospectSfTalStatuses: [],
+        prospectSfIndustries: [],
+        prospectContactsTypes: [],
+        prospectDepartments: [],
+        prospectLevels: [],
+        prospectOptizmoSuppressions: [],
+        prospectCities: [],
+        prospectCountries: [],
+      },
+      error: error instanceof Error ? error.message : "Unknown database error",
+    }
+  }
+}
+
+export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filters }: DataQueryParams = {}) {
+  try {
+    console.time("getAllData total")
+    console.log("Starting to fetch prospects from database...")
+
+    if (!process.env.DATABASE_URL) {
+      console.error("DATABASE_URL environment variable is not set")
+      return {
+        prospects: [],
+        filteredCount: 0,
+        totalCount: 0,
+        availableOptions: {
+          prospectAccountNames: [],
+          prospectRnxtDataTypes: [],
+          prospectProjectNames: [],
+          prospectDupeStatuses: [],
+          prospectSfTalStatuses: [],
+          prospectSfIndustries: [],
+          prospectContactsTypes: [],
+          prospectDepartments: [],
+          prospectLevels: [],
+          prospectOptizmoSuppressions: [],
+          prospectCities: [],
+          prospectCountries: [],
+        },
+        error: "Database configuration missing",
+      }
+    }
+
+    if (!sql) {
+      console.error("Database connection not initialized")
+      return {
+        prospects: [],
+        filteredCount: 0,
+        totalCount: 0,
+        availableOptions: {
+          prospectAccountNames: [],
+          prospectRnxtDataTypes: [],
+          prospectProjectNames: [],
+          prospectDupeStatuses: [],
+          prospectSfTalStatuses: [],
+          prospectSfIndustries: [],
+          prospectContactsTypes: [],
+          prospectDepartments: [],
+          prospectLevels: [],
+          prospectOptizmoSuppressions: [],
+          prospectCities: [],
+          prospectCountries: [],
+        },
+        error: "Database connection failed",
+      }
+    }
+
+    const safePageSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE)
+    const safePage = Math.max(page, 1)
+    const normalizedFilters = normalizeFilters(filters)
+    const cacheKey = `all_data:${safePage}:${safePageSize}:${JSON.stringify(normalizedFilters)}`
+    const cached = getCachedData(cacheKey)
+    if (cached) {
+      console.log("Returning all data from cache")
+      return cached
+    }
+
+    console.time("getAllData prospects")
+    const prospects = await getProspects({
+      page: safePage,
+      pageSize: safePageSize,
+      filters: normalizedFilters,
+    })
+    console.timeEnd("getAllData prospects")
+
+    const counts = await getCounts({ filters: normalizedFilters })
+    const options = await getFilterOptions({ filters: normalizedFilters })
+
+    console.log("Successfully fetched prospects:", {
+      prospects: prospects.length,
+      filteredCount: counts.filteredCount,
+      totalCount: counts.totalCount,
+    })
+
+    const allData = {
+      prospects,
+      filteredCount: counts.filteredCount,
+      totalCount: counts.totalCount,
+      availableOptions: options.availableOptions,
+      error: counts.error ?? options.error ?? null,
     }
 
     setCachedData(cacheKey, allData)

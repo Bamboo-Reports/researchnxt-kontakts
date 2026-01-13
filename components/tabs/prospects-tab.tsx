@@ -4,12 +4,12 @@ import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, PieChartIcon } from "lucide-react"
 import { ProspectRow } from "@/components/tables/prospect-row"
 import { EmptyState } from "@/components/states/empty-state"
 import { ProspectDetailsDialog } from "@/components/dialogs/prospect-details-dialog"
-import { getPaginatedData, getTotalPages, getPageInfo } from "@/lib/utils/helpers"
+import { getTotalPages, getPageInfo } from "@/lib/utils/helpers"
 import type { Prospect } from "@/lib/types"
 
 interface ProspectsTabProps {
@@ -18,7 +18,7 @@ interface ProspectsTabProps {
   currentPage: number
   setCurrentPage: (page: number | ((prev: number) => number)) => void
   itemsPerPage: number
-  isApplying: boolean
+  isPageLoading: boolean
 }
 
 export function ProspectsTab({
@@ -27,7 +27,7 @@ export function ProspectsTab({
   currentPage,
   setCurrentPage,
   itemsPerPage,
-  isApplying,
+  isPageLoading,
 }: ProspectsTabProps) {
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -120,12 +120,7 @@ export function ProspectsTab({
       </div>
 
        {/* Data Table */}
-         <Card className="flex flex-col h-[calc(100vh-18rem)] border shadow-sm animate-fade-in relative">
-          {isApplying && (
-            <div className="absolute inset-0 z-10 bg-background/70 backdrop-blur-sm flex items-center justify-center">
-              <div className="h-10 w-10 rounded-full border-4 border-muted border-t-foreground animate-spin" />
-            </div>
-          )}
+        <Card className="flex flex-col h-[calc(100vh-18rem)] border shadow-sm animate-fade-in relative">
            <CardHeader className="shrink-0 px-6 py-4">
              <div className="flex flex-wrap items-center gap-3">
                <CardTitle className="text-lg">Prospects Data</CardTitle>
@@ -152,15 +147,33 @@ export function ProspectsTab({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getPaginatedData(sortedProspects, currentPage, itemsPerPage).map(
-                      (prospect, index) => (
-                        <ProspectRow
-                          key={`${prospect.email}-${index}`}
-                          prospect={prospect}
-                          onClick={() => handleProspectClick(prospect)}
-                        />
-                      )
-                    )}
+                    {isPageLoading
+                      ? Array.from({ length: Math.min(itemsPerPage, 10) }).map((_, index) => (
+                          <TableRow key={`skeleton-${index}`}>
+                            <TableCell>
+                              <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-4 w-40 bg-muted animate-pulse rounded" />
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-4 w-36 bg-muted animate-pulse rounded" />
+                            </TableCell>
+                            <TableCell>
+                              <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      : sortedProspects.map((prospect, index) => (
+                          <ProspectRow
+                            key={`${prospect.email}-${index}`}
+                            prospect={prospect}
+                            onClick={() => handleProspectClick(prospect)}
+                          />
+                        ))}
                   </TableBody>
                 </Table>
               </div>
