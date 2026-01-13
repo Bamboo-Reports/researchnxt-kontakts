@@ -75,13 +75,31 @@ type DataQueryParams = {
 }
 
 const normalizeFilters = (filters?: Filters): Filters => ({
+  prospectAccountNames: filters?.prospectAccountNames ?? [],
+  prospectRnxtDataTypes: filters?.prospectRnxtDataTypes ?? [],
+  prospectProjectNames: filters?.prospectProjectNames ?? [],
+  prospectDupeStatuses: filters?.prospectDupeStatuses ?? [],
+  prospectSfTalStatuses: filters?.prospectSfTalStatuses ?? [],
+  prospectSfIndustries: filters?.prospectSfIndustries ?? [],
+  prospectContactsTypes: filters?.prospectContactsTypes ?? [],
   prospectDepartments: filters?.prospectDepartments ?? [],
   prospectLevels: filters?.prospectLevels ?? [],
+  prospectOptizmoSuppressions: filters?.prospectOptizmoSuppressions ?? [],
   prospectCities: filters?.prospectCities ?? [],
+  prospectCountries: filters?.prospectCountries ?? [],
   prospectTitleKeywords: filters?.prospectTitleKeywords ?? [],
+  includeBlankAccountNames: filters?.includeBlankAccountNames ?? false,
+  includeBlankRnxtDataTypes: filters?.includeBlankRnxtDataTypes ?? false,
+  includeBlankProjectNames: filters?.includeBlankProjectNames ?? false,
+  includeBlankDupeStatuses: filters?.includeBlankDupeStatuses ?? false,
+  includeBlankSfTalStatuses: filters?.includeBlankSfTalStatuses ?? false,
+  includeBlankSfIndustries: filters?.includeBlankSfIndustries ?? false,
+  includeBlankContactsTypes: filters?.includeBlankContactsTypes ?? false,
   includeBlankDepartments: filters?.includeBlankDepartments ?? false,
   includeBlankLevels: filters?.includeBlankLevels ?? false,
+  includeBlankOptizmoSuppressions: filters?.includeBlankOptizmoSuppressions ?? false,
   includeBlankCities: filters?.includeBlankCities ?? false,
+  includeBlankCountries: filters?.includeBlankCountries ?? false,
 })
 
 const splitFilterValues = (filterArray: FilterValue[]) => {
@@ -133,9 +151,18 @@ const buildFilterQuery = (filters: Filters) => {
     }
   }
 
+  addValueFilter("account_name", filters.prospectAccountNames, filters.includeBlankAccountNames)
+  addValueFilter("rnxt_data_type", filters.prospectRnxtDataTypes, filters.includeBlankRnxtDataTypes)
+  addValueFilter("project_name", filters.prospectProjectNames, filters.includeBlankProjectNames)
+  addValueFilter("dupe_status", filters.prospectDupeStatuses, filters.includeBlankDupeStatuses)
+  addValueFilter("sf_tal_status", filters.prospectSfTalStatuses, filters.includeBlankSfTalStatuses)
+  addValueFilter("sf_industry", filters.prospectSfIndustries, filters.includeBlankSfIndustries)
+  addValueFilter("contacts_type", filters.prospectContactsTypes, filters.includeBlankContactsTypes)
   addValueFilter("department", filters.prospectDepartments, filters.includeBlankDepartments)
   addValueFilter("level", filters.prospectLevels, filters.includeBlankLevels)
+  addValueFilter("optizmo_supression", filters.prospectOptizmoSuppressions, filters.includeBlankOptizmoSuppressions)
   addValueFilter("city", filters.prospectCities, filters.includeBlankCities)
+  addValueFilter("country", filters.prospectCountries, filters.includeBlankCountries)
   addKeywordFilter("designation", filters.prospectTitleKeywords)
 
   const whereClause = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : ""
@@ -197,9 +224,18 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
         filteredCount: 0,
         totalCount: 0,
         availableOptions: {
+          prospectAccountNames: [],
+          prospectRnxtDataTypes: [],
+          prospectProjectNames: [],
+          prospectDupeStatuses: [],
+          prospectSfTalStatuses: [],
+          prospectSfIndustries: [],
+          prospectContactsTypes: [],
           prospectDepartments: [],
           prospectLevels: [],
+          prospectOptizmoSuppressions: [],
           prospectCities: [],
+          prospectCountries: [],
         },
         error: "Database configuration missing",
       }
@@ -212,9 +248,18 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
         filteredCount: 0,
         totalCount: 0,
         availableOptions: {
+          prospectAccountNames: [],
+          prospectRnxtDataTypes: [],
+          prospectProjectNames: [],
+          prospectDupeStatuses: [],
+          prospectSfTalStatuses: [],
+          prospectSfIndustries: [],
+          prospectContactsTypes: [],
           prospectDepartments: [],
           prospectLevels: [],
+          prospectOptizmoSuppressions: [],
           prospectCities: [],
+          prospectCountries: [],
         },
         error: "Database connection failed",
       }
@@ -251,6 +296,55 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
       setCachedData(totalCountCacheKey, totalCount)
     }
 
+    const accountNameQuery = `
+      SELECT account_name AS value, COUNT(*)::int AS count
+      FROM rnxt_db
+      ${appendWhereCondition(whereClause, "account_name IS NOT NULL AND account_name <> ''")}
+      GROUP BY account_name
+      ORDER BY count DESC
+    `
+    const rnxtDataTypeQuery = `
+      SELECT rnxt_data_type AS value, COUNT(*)::int AS count
+      FROM rnxt_db
+      ${appendWhereCondition(whereClause, "rnxt_data_type IS NOT NULL AND rnxt_data_type <> ''")}
+      GROUP BY rnxt_data_type
+      ORDER BY count DESC
+    `
+    const projectNameQuery = `
+      SELECT project_name AS value, COUNT(*)::int AS count
+      FROM rnxt_db
+      ${appendWhereCondition(whereClause, "project_name IS NOT NULL AND project_name <> ''")}
+      GROUP BY project_name
+      ORDER BY count DESC
+    `
+    const dupeStatusQuery = `
+      SELECT dupe_status AS value, COUNT(*)::int AS count
+      FROM rnxt_db
+      ${appendWhereCondition(whereClause, "dupe_status IS NOT NULL AND dupe_status <> ''")}
+      GROUP BY dupe_status
+      ORDER BY count DESC
+    `
+    const sfTalStatusQuery = `
+      SELECT sf_tal_status AS value, COUNT(*)::int AS count
+      FROM rnxt_db
+      ${appendWhereCondition(whereClause, "sf_tal_status IS NOT NULL AND sf_tal_status <> ''")}
+      GROUP BY sf_tal_status
+      ORDER BY count DESC
+    `
+    const sfIndustryQuery = `
+      SELECT sf_industry AS value, COUNT(*)::int AS count
+      FROM rnxt_db
+      ${appendWhereCondition(whereClause, "sf_industry IS NOT NULL AND sf_industry <> ''")}
+      GROUP BY sf_industry
+      ORDER BY count DESC
+    `
+    const contactsTypeQuery = `
+      SELECT contacts_type AS value, COUNT(*)::int AS count
+      FROM rnxt_db
+      ${appendWhereCondition(whereClause, "contacts_type IS NOT NULL AND contacts_type <> ''")}
+      GROUP BY contacts_type
+      ORDER BY count DESC
+    `
     const departmentQuery = `
       SELECT department AS value, COUNT(*)::int AS count
       FROM rnxt_db
@@ -265,6 +359,13 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
       GROUP BY level
       ORDER BY count DESC
     `
+    const optizmoSuppressionQuery = `
+      SELECT optizmo_supression AS value, COUNT(*)::int AS count
+      FROM rnxt_db
+      ${appendWhereCondition(whereClause, "optizmo_supression IS NOT NULL AND optizmo_supression <> ''")}
+      GROUP BY optizmo_supression
+      ORDER BY count DESC
+    `
     const cityQuery = `
       SELECT city AS value, COUNT(*)::int AS count
       FROM rnxt_db
@@ -272,10 +373,39 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
       GROUP BY city
       ORDER BY count DESC
     `
-    const [departmentCounts, levelCounts, cityCounts] = await Promise.all([
+    const countryQuery = `
+      SELECT country AS value, COUNT(*)::int AS count
+      FROM rnxt_db
+      ${appendWhereCondition(whereClause, "country IS NOT NULL AND country <> ''")}
+      GROUP BY country
+      ORDER BY count DESC
+    `
+    const [
+      accountNameCounts,
+      rnxtDataTypeCounts,
+      projectNameCounts,
+      dupeStatusCounts,
+      sfTalStatusCounts,
+      sfIndustryCounts,
+      contactsTypeCounts,
+      departmentCounts,
+      levelCounts,
+      optizmoSuppressionCounts,
+      cityCounts,
+      countryCounts,
+    ] = await Promise.all([
+      fetchWithRetry(() => sql.query(accountNameQuery, params)),
+      fetchWithRetry(() => sql.query(rnxtDataTypeQuery, params)),
+      fetchWithRetry(() => sql.query(projectNameQuery, params)),
+      fetchWithRetry(() => sql.query(dupeStatusQuery, params)),
+      fetchWithRetry(() => sql.query(sfTalStatusQuery, params)),
+      fetchWithRetry(() => sql.query(sfIndustryQuery, params)),
+      fetchWithRetry(() => sql.query(contactsTypeQuery, params)),
       fetchWithRetry(() => sql.query(departmentQuery, params)),
       fetchWithRetry(() => sql.query(levelQuery, params)),
+      fetchWithRetry(() => sql.query(optizmoSuppressionQuery, params)),
       fetchWithRetry(() => sql.query(cityQuery, params)),
+      fetchWithRetry(() => sql.query(countryQuery, params)),
     ])
 
     console.log("Successfully fetched prospects:", {
@@ -289,9 +419,18 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
       filteredCount,
       totalCount,
       availableOptions: {
+        prospectAccountNames: accountNameCounts ?? [],
+        prospectRnxtDataTypes: rnxtDataTypeCounts ?? [],
+        prospectProjectNames: projectNameCounts ?? [],
+        prospectDupeStatuses: dupeStatusCounts ?? [],
+        prospectSfTalStatuses: sfTalStatusCounts ?? [],
+        prospectSfIndustries: sfIndustryCounts ?? [],
+        prospectContactsTypes: contactsTypeCounts ?? [],
         prospectDepartments: departmentCounts ?? [],
         prospectLevels: levelCounts ?? [],
+        prospectOptizmoSuppressions: optizmoSuppressionCounts ?? [],
         prospectCities: cityCounts ?? [],
+        prospectCountries: countryCounts ?? [],
       },
       error: null,
     }
@@ -307,9 +446,18 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
       filteredCount: 0,
       totalCount: 0,
       availableOptions: {
+        prospectAccountNames: [],
+        prospectRnxtDataTypes: [],
+        prospectProjectNames: [],
+        prospectDupeStatuses: [],
+        prospectSfTalStatuses: [],
+        prospectSfIndustries: [],
+        prospectContactsTypes: [],
         prospectDepartments: [],
         prospectLevels: [],
+        prospectOptizmoSuppressions: [],
         prospectCities: [],
+        prospectCountries: [],
       },
       error: error instanceof Error ? error.message : "Unknown database error",
     }

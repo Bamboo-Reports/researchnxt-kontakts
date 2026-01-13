@@ -35,6 +35,92 @@ export function FiltersSidebar({
   handleLoadSavedFilters,
 }: FiltersSidebarProps) {
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
+  const valueFilters = [
+    {
+      key: "prospectAccountNames",
+      includeBlankKey: "includeBlankAccountNames",
+      optionsKey: "prospectAccountNames",
+      label: "Account Name",
+      placeholder: "Select account names...",
+    },
+    {
+      key: "prospectRnxtDataTypes",
+      includeBlankKey: "includeBlankRnxtDataTypes",
+      optionsKey: "prospectRnxtDataTypes",
+      label: "RNXT Data Type",
+      placeholder: "Select data types...",
+    },
+    {
+      key: "prospectProjectNames",
+      includeBlankKey: "includeBlankProjectNames",
+      optionsKey: "prospectProjectNames",
+      label: "Project Name",
+      placeholder: "Select project names...",
+    },
+    {
+      key: "prospectDupeStatuses",
+      includeBlankKey: "includeBlankDupeStatuses",
+      optionsKey: "prospectDupeStatuses",
+      label: "Dupe Status",
+      placeholder: "Select dupe statuses...",
+    },
+    {
+      key: "prospectSfTalStatuses",
+      includeBlankKey: "includeBlankSfTalStatuses",
+      optionsKey: "prospectSfTalStatuses",
+      label: "SF TAL Status",
+      placeholder: "Select SF TAL statuses...",
+    },
+    {
+      key: "prospectSfIndustries",
+      includeBlankKey: "includeBlankSfIndustries",
+      optionsKey: "prospectSfIndustries",
+      label: "SF Industry",
+      placeholder: "Select SF industries...",
+    },
+    {
+      key: "prospectContactsTypes",
+      includeBlankKey: "includeBlankContactsTypes",
+      optionsKey: "prospectContactsTypes",
+      label: "Contacts Type",
+      placeholder: "Select contact types...",
+    },
+    {
+      key: "prospectDepartments",
+      includeBlankKey: "includeBlankDepartments",
+      optionsKey: "prospectDepartments",
+      label: "Department",
+      placeholder: "Select departments...",
+    },
+    {
+      key: "prospectLevels",
+      includeBlankKey: "includeBlankLevels",
+      optionsKey: "prospectLevels",
+      label: "Level",
+      placeholder: "Select levels...",
+    },
+    {
+      key: "prospectOptizmoSuppressions",
+      includeBlankKey: "includeBlankOptizmoSuppressions",
+      optionsKey: "prospectOptizmoSuppressions",
+      label: "Optizmo Suppression",
+      placeholder: "Select suppression statuses...",
+    },
+    {
+      key: "prospectCities",
+      includeBlankKey: "includeBlankCities",
+      optionsKey: "prospectCities",
+      label: "City",
+      placeholder: "Select cities...",
+    },
+    {
+      key: "prospectCountries",
+      includeBlankKey: "includeBlankCountries",
+      optionsKey: "prospectCountries",
+      label: "Country",
+      placeholder: "Select countries...",
+    },
+  ] as const
 
   return (
     <div className="border-r bg-sidebar overflow-y-auto overflow-x-hidden w-[360px] shrink-0 relative">
@@ -60,87 +146,40 @@ export function FiltersSidebar({
           </div>
 
           <div className="space-y-3">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium">Departments</Label>
-                <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <Checkbox
-                    checked={pendingFilters.includeBlankDepartments}
-                    onCheckedChange={(checked) =>
-                      setPendingFilters((prev) => ({
-                        ...prev,
-                        includeBlankDepartments: checked === true,
-                      }))
-                    }
+            {valueFilters.map((filterConfig) => {
+              const selected = pendingFilters[filterConfig.key] as FilterValue[]
+              const includeBlank = pendingFilters[filterConfig.includeBlankKey] as boolean
+              const options = availableOptions[filterConfig.optionsKey] || []
+              return (
+                <div className="space-y-2" key={filterConfig.key}>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">{filterConfig.label}</Label>
+                    <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <Checkbox
+                        checked={includeBlank}
+                        onCheckedChange={(checked) =>
+                          setPendingFilters((prev) => ({
+                            ...prev,
+                            [filterConfig.includeBlankKey]: checked === true,
+                          }))
+                        }
+                      />
+                      <span>Include blanks</span>
+                    </label>
+                  </div>
+                  <EnhancedMultiSelect
+                    options={options}
+                    selected={selected}
+                    onChange={(nextSelected) => {
+                      setPendingFilters((prev) => ({ ...prev, [filterConfig.key]: nextSelected }))
+                      setActiveFilter(filterConfig.key)
+                    }}
+                    placeholder={filterConfig.placeholder}
+                    isApplying={isApplying && activeFilter === filterConfig.key}
                   />
-                  <span>Include blanks</span>
-                </label>
-              </div>
-              <EnhancedMultiSelect
-                options={availableOptions.prospectDepartments || []}
-                selected={pendingFilters.prospectDepartments}
-                onChange={(selected) => {
-                  setPendingFilters((prev) => ({ ...prev, prospectDepartments: selected }))
-                  setActiveFilter("prospectDepartments")
-                }}
-                placeholder="Select departments..."
-                isApplying={isApplying && activeFilter === "prospectDepartments"}
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium">Levels</Label>
-                <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <Checkbox
-                    checked={pendingFilters.includeBlankLevels}
-                    onCheckedChange={(checked) =>
-                      setPendingFilters((prev) => ({
-                        ...prev,
-                        includeBlankLevels: checked === true,
-                      }))
-                    }
-                  />
-                  <span>Include blanks</span>
-                </label>
-              </div>
-              <EnhancedMultiSelect
-                options={availableOptions.prospectLevels || []}
-                selected={pendingFilters.prospectLevels}
-                onChange={(selected) => {
-                  setPendingFilters((prev) => ({ ...prev, prospectLevels: selected }))
-                  setActiveFilter("prospectLevels")
-                }}
-                placeholder="Select levels..."
-                isApplying={isApplying && activeFilter === "prospectLevels"}
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium">Cities</Label>
-                <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <Checkbox
-                    checked={pendingFilters.includeBlankCities}
-                    onCheckedChange={(checked) =>
-                      setPendingFilters((prev) => ({
-                        ...prev,
-                        includeBlankCities: checked === true,
-                      }))
-                    }
-                  />
-                  <span>Include blanks</span>
-                </label>
-              </div>
-              <EnhancedMultiSelect
-                options={availableOptions.prospectCities || []}
-                selected={pendingFilters.prospectCities}
-                onChange={(selected) => {
-                  setPendingFilters((prev) => ({ ...prev, prospectCities: selected }))
-                  setActiveFilter("prospectCities")
-                }}
-                placeholder="Select cities..."
-                isApplying={isApplying && activeFilter === "prospectCities"}
-              />
-            </div>
+                </div>
+              )
+            })}
             <div className="space-y-2 pt-3 border-t border-border">
               <Label className="text-xs font-medium">Title Keywords</Label>
               <TitleKeywordInput

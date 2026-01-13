@@ -48,25 +48,61 @@ type FilterValueLike = FilterValue | string | null | undefined
 
 const calculateActiveFilters = (filters: Filters) => {
   return (
+    filters.prospectAccountNames.length +
+    filters.prospectRnxtDataTypes.length +
+    filters.prospectProjectNames.length +
+    filters.prospectDupeStatuses.length +
+    filters.prospectSfTalStatuses.length +
+    filters.prospectSfIndustries.length +
+    filters.prospectContactsTypes.length +
     filters.prospectDepartments.length +
     filters.prospectLevels.length +
+    filters.prospectOptizmoSuppressions.length +
     filters.prospectCities.length +
+    filters.prospectCountries.length +
     filters.prospectTitleKeywords.length +
+    (filters.includeBlankAccountNames ? 1 : 0) +
+    (filters.includeBlankRnxtDataTypes ? 1 : 0) +
+    (filters.includeBlankProjectNames ? 1 : 0) +
+    (filters.includeBlankDupeStatuses ? 1 : 0) +
+    (filters.includeBlankSfTalStatuses ? 1 : 0) +
+    (filters.includeBlankSfIndustries ? 1 : 0) +
+    (filters.includeBlankContactsTypes ? 1 : 0) +
     (filters.includeBlankDepartments ? 1 : 0) +
     (filters.includeBlankLevels ? 1 : 0) +
-    (filters.includeBlankCities ? 1 : 0)
+    (filters.includeBlankOptizmoSuppressions ? 1 : 0) +
+    (filters.includeBlankCities ? 1 : 0) +
+    (filters.includeBlankCountries ? 1 : 0)
   )
 }
 
 const withFilterDefaults = (filters: Partial<Filters> | null | undefined): Filters => {
   return {
+    prospectAccountNames: filters?.prospectAccountNames ?? [],
+    prospectRnxtDataTypes: filters?.prospectRnxtDataTypes ?? [],
+    prospectProjectNames: filters?.prospectProjectNames ?? [],
+    prospectDupeStatuses: filters?.prospectDupeStatuses ?? [],
+    prospectSfTalStatuses: filters?.prospectSfTalStatuses ?? [],
+    prospectSfIndustries: filters?.prospectSfIndustries ?? [],
+    prospectContactsTypes: filters?.prospectContactsTypes ?? [],
     prospectDepartments: filters?.prospectDepartments ?? [],
     prospectLevels: filters?.prospectLevels ?? [],
+    prospectOptizmoSuppressions: filters?.prospectOptizmoSuppressions ?? [],
     prospectCities: filters?.prospectCities ?? [],
+    prospectCountries: filters?.prospectCountries ?? [],
     prospectTitleKeywords: filters?.prospectTitleKeywords ?? [],
+    includeBlankAccountNames: filters?.includeBlankAccountNames ?? false,
+    includeBlankRnxtDataTypes: filters?.includeBlankRnxtDataTypes ?? false,
+    includeBlankProjectNames: filters?.includeBlankProjectNames ?? false,
+    includeBlankDupeStatuses: filters?.includeBlankDupeStatuses ?? false,
+    includeBlankSfTalStatuses: filters?.includeBlankSfTalStatuses ?? false,
+    includeBlankSfIndustries: filters?.includeBlankSfIndustries ?? false,
+    includeBlankContactsTypes: filters?.includeBlankContactsTypes ?? false,
     includeBlankDepartments: filters?.includeBlankDepartments ?? false,
     includeBlankLevels: filters?.includeBlankLevels ?? false,
+    includeBlankOptizmoSuppressions: filters?.includeBlankOptizmoSuppressions ?? false,
     includeBlankCities: filters?.includeBlankCities ?? false,
+    includeBlankCountries: filters?.includeBlankCountries ?? false,
   }
 }
 
@@ -178,12 +214,30 @@ const SavedFilterCard = memo(({
             </Button>
           </div>
           <div className="flex flex-wrap gap-1">
+            {renderFilterValues(filter.filters.prospectAccountNames, "Account Name")}
+            {renderBlankBadge(filter.filters.includeBlankAccountNames, "Account Name")}
+            {renderFilterValues(filter.filters.prospectRnxtDataTypes, "RNXT Data Type")}
+            {renderBlankBadge(filter.filters.includeBlankRnxtDataTypes, "RNXT Data Type")}
+            {renderFilterValues(filter.filters.prospectProjectNames, "Project Name")}
+            {renderBlankBadge(filter.filters.includeBlankProjectNames, "Project Name")}
+            {renderFilterValues(filter.filters.prospectDupeStatuses, "Dupe Status")}
+            {renderBlankBadge(filter.filters.includeBlankDupeStatuses, "Dupe Status")}
+            {renderFilterValues(filter.filters.prospectSfTalStatuses, "SF TAL Status")}
+            {renderBlankBadge(filter.filters.includeBlankSfTalStatuses, "SF TAL Status")}
+            {renderFilterValues(filter.filters.prospectSfIndustries, "SF Industry")}
+            {renderBlankBadge(filter.filters.includeBlankSfIndustries, "SF Industry")}
+            {renderFilterValues(filter.filters.prospectContactsTypes, "Contacts Type")}
+            {renderBlankBadge(filter.filters.includeBlankContactsTypes, "Contacts Type")}
             {renderFilterValues(filter.filters.prospectDepartments, "Department")}
             {renderBlankBadge(filter.filters.includeBlankDepartments, "Department")}
-            {renderFilterValues(filter.filters.prospectLevels, "Prospect Level")}
-            {renderBlankBadge(filter.filters.includeBlankLevels, "Prospect Level")}
-            {renderFilterValues(filter.filters.prospectCities, "Prospect City")}
-            {renderBlankBadge(filter.filters.includeBlankCities, "Prospect City")}
+            {renderFilterValues(filter.filters.prospectLevels, "Level")}
+            {renderBlankBadge(filter.filters.includeBlankLevels, "Level")}
+            {renderFilterValues(filter.filters.prospectOptizmoSuppressions, "Optizmo Suppression")}
+            {renderBlankBadge(filter.filters.includeBlankOptizmoSuppressions, "Optizmo Suppression")}
+            {renderFilterValues(filter.filters.prospectCities, "City")}
+            {renderBlankBadge(filter.filters.includeBlankCities, "City")}
+            {renderFilterValues(filter.filters.prospectCountries, "Country")}
+            {renderBlankBadge(filter.filters.includeBlankCountries, "Country")}
             {renderFilterValues(filter.filters.prospectTitleKeywords, "Job Title")}
           </div>
         </div>

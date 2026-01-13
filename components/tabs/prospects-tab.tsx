@@ -5,12 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Download, PieChartIcon } from "lucide-react"
+import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, PieChartIcon } from "lucide-react"
 import { ProspectRow } from "@/components/tables/prospect-row"
 import { EmptyState } from "@/components/states/empty-state"
 import { ProspectDetailsDialog } from "@/components/dialogs/prospect-details-dialog"
 import { getPaginatedData, getTotalPages, getPageInfo } from "@/lib/utils/helpers"
-import { exportToExcel } from "@/lib/utils/export-helpers"
 import type { Prospect } from "@/lib/types"
 
 interface ProspectsTabProps {
@@ -19,6 +18,7 @@ interface ProspectsTabProps {
   currentPage: number
   setCurrentPage: (page: number | ((prev: number) => number)) => void
   itemsPerPage: number
+  isApplying: boolean
 }
 
 export function ProspectsTab({
@@ -27,6 +27,7 @@ export function ProspectsTab({
   currentPage,
   setCurrentPage,
   itemsPerPage,
+  isApplying,
 }: ProspectsTabProps) {
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -119,7 +120,12 @@ export function ProspectsTab({
       </div>
 
        {/* Data Table */}
-         <Card className="flex flex-col h-[calc(100vh-22.5rem)] border shadow-sm animate-fade-in">
+         <Card className="flex flex-col h-[calc(100vh-18rem)] border shadow-sm animate-fade-in relative">
+          {isApplying && (
+            <div className="absolute inset-0 z-10 bg-background/70 backdrop-blur-sm flex items-center justify-center">
+              <div className="h-10 w-10 rounded-full border-4 border-muted border-t-foreground animate-spin" />
+            </div>
+          )}
            <CardHeader className="shrink-0 px-6 py-4">
              <div className="flex flex-wrap items-center gap-3">
                <CardTitle className="text-lg">Prospects Data</CardTitle>
@@ -165,15 +171,6 @@ export function ProspectsTab({
                           {getPageInfo(currentPage, filteredCount, itemsPerPage).startItem}-{getPageInfo(currentPage, filteredCount, itemsPerPage).endItem} of{" "}
                           {filteredCount}
                         </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => exportToExcel(sortedProspects, "prospects-export", "Prospects")}
-                          className="flex items-center gap-2 h-8"
-                        >
-                      <Download className="h-4 w-4" />
-                      Export
-                    </Button>
                   </div>
                   {getTotalPages(filteredCount, itemsPerPage) > 1 && (
                     <div className="flex items-center gap-2">

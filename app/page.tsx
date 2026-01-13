@@ -20,36 +20,82 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<string>("")
   const [dbStatus, setDbStatus] = useState<any>(null)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [availableOptions, setAvailableOptions] = useState<AvailableOptions>({
+    prospectAccountNames: [],
+    prospectRnxtDataTypes: [],
+    prospectProjectNames: [],
+    prospectDupeStatuses: [],
+    prospectSfTalStatuses: [],
+    prospectSfIndustries: [],
+    prospectContactsTypes: [],
     prospectDepartments: [],
     prospectLevels: [],
+    prospectOptizmoSuppressions: [],
     prospectCities: [],
+    prospectCountries: [],
   })
   const [filteredCount, setFilteredCount] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const [filters, setFilters] = useState<Filters>({
+    prospectAccountNames: [],
+    prospectRnxtDataTypes: [],
+    prospectProjectNames: [],
+    prospectDupeStatuses: [],
+    prospectSfTalStatuses: [],
+    prospectSfIndustries: [],
+    prospectContactsTypes: [],
     prospectDepartments: [],
     prospectLevels: [],
+    prospectOptizmoSuppressions: [],
     prospectCities: [],
+    prospectCountries: [],
     prospectTitleKeywords: [],
+    includeBlankAccountNames: false,
+    includeBlankRnxtDataTypes: false,
+    includeBlankProjectNames: false,
+    includeBlankDupeStatuses: false,
+    includeBlankSfTalStatuses: false,
+    includeBlankSfIndustries: false,
+    includeBlankContactsTypes: false,
     includeBlankDepartments: false,
     includeBlankLevels: false,
+    includeBlankOptizmoSuppressions: false,
     includeBlankCities: false,
+    includeBlankCountries: false,
   })
   const [pendingFilters, setPendingFilters] = useState<Filters>({
+    prospectAccountNames: [],
+    prospectRnxtDataTypes: [],
+    prospectProjectNames: [],
+    prospectDupeStatuses: [],
+    prospectSfTalStatuses: [],
+    prospectSfIndustries: [],
+    prospectContactsTypes: [],
     prospectDepartments: [],
     prospectLevels: [],
+    prospectOptizmoSuppressions: [],
     prospectCities: [],
+    prospectCountries: [],
     prospectTitleKeywords: [],
+    includeBlankAccountNames: false,
+    includeBlankRnxtDataTypes: false,
+    includeBlankProjectNames: false,
+    includeBlankDupeStatuses: false,
+    includeBlankSfTalStatuses: false,
+    includeBlankSfIndustries: false,
+    includeBlankContactsTypes: false,
     includeBlankDepartments: false,
     includeBlankLevels: false,
+    includeBlankOptizmoSuppressions: false,
     includeBlankCities: false,
+    includeBlankCountries: false,
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(50)
-  const [isApplying, setIsApplying] = useState(false)
   const [authReady, setAuthReady] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const isApplying = loading && hasLoadedOnce
 
   const checkDatabaseStatus = useCallback(async () => {
     try {
@@ -123,10 +169,26 @@ function DashboardContent() {
 
       const prospectsData = Array.isArray(data.prospects) ? data.prospects : []
       setProspects(prospectsData as Prospect[])
-      setAvailableOptions(data.availableOptions || { prospectDepartments: [], prospectLevels: [], prospectCities: [] })
+      setAvailableOptions(
+        data.availableOptions || {
+          prospectAccountNames: [],
+          prospectRnxtDataTypes: [],
+          prospectProjectNames: [],
+          prospectDupeStatuses: [],
+          prospectSfTalStatuses: [],
+          prospectSfIndustries: [],
+          prospectContactsTypes: [],
+          prospectDepartments: [],
+          prospectLevels: [],
+          prospectOptizmoSuppressions: [],
+          prospectCities: [],
+          prospectCountries: [],
+        }
+      )
       setFilteredCount(data.filteredCount ?? 0)
       setTotalCount(data.totalCount ?? 0)
       setConnectionStatus(`Successfully loaded: ${prospectsData.length} prospects`)
+      setHasLoadedOnce(true)
     } catch (err) {
       console.error("Error loading data:", err)
       const errorMessage = err instanceof Error ? err.message : "Failed to load data from database"
@@ -176,9 +238,7 @@ function DashboardContent() {
   }, [authReady, userId, loadData])
 
   useLayoutEffect(() => {
-    setIsApplying(true)
     setFilters(pendingFilters)
-    setIsApplying(false)
   }, [pendingFilters])
 
   const handleClearCache = async () => {
@@ -199,13 +259,31 @@ function DashboardContent() {
 
   const getTotalActiveFilters = () => {
     return (
+      pendingFilters.prospectAccountNames.length +
+      pendingFilters.prospectRnxtDataTypes.length +
+      pendingFilters.prospectProjectNames.length +
+      pendingFilters.prospectDupeStatuses.length +
+      pendingFilters.prospectSfTalStatuses.length +
+      pendingFilters.prospectSfIndustries.length +
+      pendingFilters.prospectContactsTypes.length +
       pendingFilters.prospectDepartments.length +
       pendingFilters.prospectLevels.length +
+      pendingFilters.prospectOptizmoSuppressions.length +
       pendingFilters.prospectCities.length +
+      pendingFilters.prospectCountries.length +
       pendingFilters.prospectTitleKeywords.length +
+      (pendingFilters.includeBlankAccountNames ? 1 : 0) +
+      (pendingFilters.includeBlankRnxtDataTypes ? 1 : 0) +
+      (pendingFilters.includeBlankProjectNames ? 1 : 0) +
+      (pendingFilters.includeBlankDupeStatuses ? 1 : 0) +
+      (pendingFilters.includeBlankSfTalStatuses ? 1 : 0) +
+      (pendingFilters.includeBlankSfIndustries ? 1 : 0) +
+      (pendingFilters.includeBlankContactsTypes ? 1 : 0) +
       (pendingFilters.includeBlankDepartments ? 1 : 0) +
       (pendingFilters.includeBlankLevels ? 1 : 0) +
-      (pendingFilters.includeBlankCities ? 1 : 0)
+      (pendingFilters.includeBlankOptizmoSuppressions ? 1 : 0) +
+      (pendingFilters.includeBlankCities ? 1 : 0) +
+      (pendingFilters.includeBlankCountries ? 1 : 0)
     )
   }
 
@@ -220,25 +298,43 @@ function DashboardContent() {
 
   const handleResetFilters = () => {
     const emptyFilters = {
+      prospectAccountNames: [],
+      prospectRnxtDataTypes: [],
+      prospectProjectNames: [],
+      prospectDupeStatuses: [],
+      prospectSfTalStatuses: [],
+      prospectSfIndustries: [],
+      prospectContactsTypes: [],
       prospectDepartments: [],
       prospectLevels: [],
+      prospectOptizmoSuppressions: [],
       prospectCities: [],
+      prospectCountries: [],
       prospectTitleKeywords: [],
+      includeBlankAccountNames: false,
+      includeBlankRnxtDataTypes: false,
+      includeBlankProjectNames: false,
+      includeBlankDupeStatuses: false,
+      includeBlankSfTalStatuses: false,
+      includeBlankSfIndustries: false,
+      includeBlankContactsTypes: false,
       includeBlankDepartments: false,
       includeBlankLevels: false,
+      includeBlankOptizmoSuppressions: false,
       includeBlankCities: false,
+      includeBlankCountries: false,
     }
     setPendingFilters(emptyFilters)
     setFilters(emptyFilters)
   }
 
-  const dataLoaded = !loading
+  const dataLoaded = !loading || hasLoadedOnce
 
   if (!authReady || !userId) {
     return null
   }
 
-  if (loading) {
+  if (loading && !hasLoadedOnce) {
     return <LoadingState connectionStatus={connectionStatus} dbStatus={dbStatus} />
   }
 
@@ -278,6 +374,7 @@ function DashboardContent() {
                   setCurrentPage={setCurrentPage}
                   itemsPerPage={itemsPerPage}
                   filteredCount={filteredCount}
+                  isApplying={isApplying}
                 />
               </div>
             </div>
