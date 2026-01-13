@@ -1,8 +1,7 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -17,9 +16,7 @@ import { signInSchema, type SignInValues } from "@/lib/validators/auth"
 
 function SignInForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const signupStatus = searchParams.get("signup")
   const {
     control,
     register,
@@ -141,20 +138,6 @@ function SignInForm() {
                 <AlertDescription>{submitError}</AlertDescription>
               </Alert>
             ) : null}
-            {signupStatus === "success" ? (
-              <Alert>
-                <AlertDescription>
-                  Account created. Please sign in to continue.
-                </AlertDescription>
-              </Alert>
-            ) : null}
-            {signupStatus === "pending" ? (
-              <Alert>
-                <AlertDescription>
-                  Check your email to confirm your account, then sign in.
-                </AlertDescription>
-              </Alert>
-            ) : null}
             <Button className="w-full" type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
@@ -167,10 +150,7 @@ function SignInForm() {
             </Button>
           </form>
           <div className="mt-4 text-sm text-muted-foreground">
-            New here?{" "}
-            <Link className="text-primary hover:underline" href="/signup">
-              Create an account
-            </Link>
+            Contact an administrator if you need access.
           </div>
         </CardContent>
       </Card>
