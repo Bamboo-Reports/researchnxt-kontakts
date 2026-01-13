@@ -23,6 +23,7 @@ import {
   Database,
   Factory,
   ShieldAlert,
+  ArrowUpRight,
 } from "lucide-react"
 import type { Prospect } from "@/lib/types"
 
@@ -37,11 +38,15 @@ const InfoRow = ({
   label,
   value,
   link,
+  linkIcon,
+  displayValue,
 }: {
   icon: any
   label: string
   value?: string | null
   link?: string
+  linkIcon?: any
+  displayValue?: string
 }) => {
   if (!value) return null
 
@@ -53,14 +58,29 @@ const InfoRow = ({
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
         {link ? (
-          <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-medium text-primary hover:underline break-words"
-          >
-            {value}
-          </a>
+          linkIcon ? (
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={label}
+              className="inline-flex items-center justify-between gap-2 text-sm font-medium text-primary hover:underline break-words"
+            >
+              <span>{displayValue ?? value}</span>
+              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-border/60 text-primary hover:bg-accent transition-colors shrink-0">
+                <linkIcon className="h-4 w-4" />
+              </span>
+            </a>
+          ) : (
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-primary hover:underline break-words"
+            >
+              {value}
+            </a>
+          )
         ) : (
           <p className="text-sm font-medium break-words">{value}</p>
         )}
@@ -78,7 +98,7 @@ export function ProspectDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glassmorphism-dialog">
+      <DialogContent className="w-[70vw] max-w-[70vw] max-h-[70vh] overflow-y-auto glassmorphism-dialog">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -112,6 +132,8 @@ export function ProspectDetailsDialog({
               label: "LinkedIn Profile",
               value: prospect.linkedin_id,
               link: prospect.linkedin_id || undefined,
+              linkIcon: ArrowUpRight,
+              displayValue: "View profile",
             },
             {
               icon: Link,
@@ -156,6 +178,8 @@ function renderSection(
     label: string
     value?: string | null
     link?: string
+    linkIcon?: any
+    displayValue?: string
   }>
 ) {
   const visibleRows = rows.filter((row) => Boolean(row.value))
@@ -174,6 +198,8 @@ function renderSection(
             label={row.label}
             value={row.value}
             link={row.link}
+            linkIcon={row.linkIcon}
+            displayValue={row.displayValue}
           />
         ))}
       </div>
