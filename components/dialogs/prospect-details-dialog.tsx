@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Mail, Linkedin, MapPin, Building2, Briefcase, Users, Award } from "lucide-react"
+import { Mail, Linkedin, MapPin, Briefcase, Users, Award } from "lucide-react"
 import type { Prospect } from "@/lib/types"
 
 interface ProspectDetailsDialogProps {
@@ -108,25 +108,6 @@ export function ProspectDetailsDialog({
                 icon={Award}
                 label="Level"
                 value={prospect.prospect_level}
-              />
-            </div>
-          </div>
-
-          {/* Company Information Section */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Company Information
-            </h3>
-            <div className="grid gap-3">
-              <InfoRow
-                icon={Building2}
-                label="Account Name"
-                value={prospect.account_global_legal_name}
-              />
-              <InfoRow
-                icon={Building2}
-                label="Center Name"
-                value={prospect.center_name}
               />
             </div>
           </div>

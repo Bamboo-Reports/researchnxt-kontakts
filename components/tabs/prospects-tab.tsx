@@ -3,12 +3,10 @@
 import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Download, PieChartIcon, Table as TableIcon, LayoutGrid } from "lucide-react"
+import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Download, PieChartIcon, Table as TableIcon } from "lucide-react"
 import { ProspectRow } from "@/components/tables/prospect-row"
-import { ProspectGridCard } from "@/components/cards/prospect-grid-card"
 import { PieChartCard } from "@/components/charts/pie-chart-card"
 import { EmptyState } from "@/components/states/empty-state"
 import { ProspectDetailsDialog } from "@/components/dialogs/prospect-details-dialog"
@@ -48,8 +46,6 @@ export function ProspectsTab({
     key: "name",
     direction: null,
   })
-  const [dataLayout, setDataLayout] = useState<"table" | "grid">("table")
-
   const handleProspectClick = (prospect: Prospect) => {
     setSelectedProspect(prospect)
     setIsDialogOpen(true)
@@ -118,15 +114,11 @@ export function ProspectsTab({
 
   // Show empty state when no prospects
   if (prospects.length === 0) {
-    return (
-      <TabsContent value="prospects">
-        <EmptyState type="no-results" />
-      </TabsContent>
-    )
+    return <EmptyState type="no-results" />
   }
 
   return (
-    <TabsContent value="prospects">
+    <div>
       {/* Header with View Toggle */}
       <div className="flex items-center gap-2 mb-4">
         <PieChartIcon className="h-5 w-5 text-[hsl(var(--chart-1))]" />
@@ -183,93 +175,40 @@ export function ProspectsTab({
            <CardHeader className="shrink-0 px-6 py-4">
              <div className="flex flex-wrap items-center gap-3">
                <CardTitle className="text-lg">Prospects Data</CardTitle>
-               <ViewSwitcher
-                 value={dataLayout}
-                 onValueChange={(value) => setDataLayout(value as "table" | "grid")}
-                 options={[
-                   {
-                     value: "table",
-                     label: <span className="text-[hsl(var(--chart-2))]">Table</span>,
-                     icon: (
-                       <TableIcon className="h-4 w-4 text-[hsl(var(--chart-2))]" />
-                     ),
-                   },
-                   {
-                     value: "grid",
-                     label: <span className="text-[hsl(var(--chart-3))]">Grid</span>,
-                     icon: (
-                       <LayoutGrid className="h-4 w-4 text-[hsl(var(--chart-3))]" />
-                     ),
-                   },
-                 ]}
-               />
              </div>
            </CardHeader>
             <CardContent className="p-0 flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 overflow-auto">
-                {dataLayout === "table" ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-16"></TableHead>
-                        <TableHead>
-                          <SortButton label="Name" sortKey="name" />
-                        </TableHead>
-                        <TableHead>
-                          <SortButton label="Location" sortKey="location" />
-                        </TableHead>
-                        <TableHead>
-                          <SortButton label="Job Title" sortKey="title" />
-                        </TableHead>
-                        <TableHead>
-                          <SortButton label="Department" sortKey="department" />
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {getPaginatedData(sortedProspects, currentPage, itemsPerPage).map(
-                        (prospect, index) => (
-                          <ProspectRow
-                            key={`${prospect.prospect_email}-${index}`}
-                            prospect={prospect}
-                            onClick={() => handleProspectClick(prospect)}
-                          />
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2 px-6 py-3 border-b bg-muted/20">
-                      <span className="text-xs font-medium text-muted-foreground">Sort</span>
-                      <button
-                        type="button"
-                        onClick={() => handleSort("name")}
-                        className="inline-flex items-center justify-center rounded-md border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20 shadow-sm transition-colors h-7 w-7"
-                        aria-label="Sort by prospect name"
-                      >
-                        {sort.key !== "name" || sort.direction === null ? (
-                          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-                        ) : sort.direction === "asc" ? (
-                          <ArrowUpAZ className="h-3.5 w-3.5 text-muted-foreground" />
-                        ) : (
-                          <ArrowDownAZ className="h-3.5 w-3.5 text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-                      {getPaginatedData(sortedProspects, currentPage, itemsPerPage).map(
-                        (prospect, index) => (
-                          <ProspectGridCard
-                            key={`${prospect.prospect_email}-${index}`}
-                            prospect={prospect}
-                            onClick={() => handleProspectClick(prospect)}
-                          />
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16"></TableHead>
+                      <TableHead>
+                        <SortButton label="Name" sortKey="name" />
+                      </TableHead>
+                      <TableHead>
+                        <SortButton label="Location" sortKey="location" />
+                      </TableHead>
+                      <TableHead>
+                        <SortButton label="Job Title" sortKey="title" />
+                      </TableHead>
+                      <TableHead>
+                        <SortButton label="Department" sortKey="department" />
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {getPaginatedData(sortedProspects, currentPage, itemsPerPage).map(
+                      (prospect, index) => (
+                        <ProspectRow
+                          key={`${prospect.prospect_email}-${index}`}
+                          prospect={prospect}
+                          onClick={() => handleProspectClick(prospect)}
+                        />
+                      )
+                    )}
+                  </TableBody>
+                </Table>
               </div>
                   {prospects.length > 0 && (
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-6 py-4 border-t shrink-0 bg-muted/20">
@@ -331,6 +270,6 @@ export function ProspectsTab({
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
       />
-    </TabsContent>
+    </div>
   )
 }

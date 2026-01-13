@@ -4,7 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 
 export const metadata: Metadata = {
   title: 'Bamboo Reports - Research aNXT',
-  description: 'Intelligence-driven insights for accounts, centers, and services',
+  description: 'Intelligence-driven insights for prospects',
   generator: 'Next.js',
 }
 

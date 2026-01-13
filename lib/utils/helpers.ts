@@ -1,20 +1,3 @@
-import type { Account, Center, Function, ChartData } from "../types"
-
-/**
- * Parse revenue value from string or number
- */
-export const parseRevenue = (value: string | number): number => {
-  const numValue = typeof value === "string" ? Number.parseFloat(value) : value
-  return isNaN(numValue) ? 0 : numValue
-}
-
-/**
- * Format revenue in millions
- */
-export const formatRevenueInMillions = (value: number): string => {
-  return `${value.toLocaleString()}M`
-}
-
 /**
  * Debounce function for search and other delayed actions
  */
