@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Mail, Linkedin, MapPin, Briefcase, Users, Award } from "lucide-react"
+import { Mail, Linkedin, MapPin, Briefcase, Users, Award, Building2, FileText, BadgeCheck, Link } from "lucide-react"
 import type { Prospect } from "@/lib/types"
 
 interface ProspectDetailsDialogProps {
@@ -57,16 +57,40 @@ export function ProspectDetailsDialog({
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-lg font-bold text-primary">
-                {prospect.prospect_first_name?.[0]}{prospect.prospect_last_name?.[0]}
+                {prospect.first_name?.[0]}{prospect.last_name?.[0]}
               </span>
             </div>
             <div>
-              {prospect.prospect_first_name} {prospect.prospect_last_name}
+              {prospect.first_name} {prospect.last_name}
             </div>
           </DialogTitle>
         </DialogHeader>
 
         <div className="mt-4 space-y-6">
+          {/* Account Information Section */}
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Account Information
+            </h3>
+            <div className="grid gap-3">
+              <InfoRow
+                icon={Building2}
+                label="Account Name"
+                value={prospect.account_name}
+              />
+              <InfoRow
+                icon={Building2}
+                label="Entity Name"
+                value={prospect.entity_name}
+              />
+              <InfoRow
+                icon={BadgeCheck}
+                label="Contact Type"
+                value={prospect.contacts_type}
+              />
+            </div>
+          </div>
+
           {/* Contact Information Section */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
@@ -76,14 +100,20 @@ export function ProspectDetailsDialog({
               <InfoRow
                 icon={Mail}
                 label="Email"
-                value={prospect.prospect_email}
-                link={prospect.prospect_email ? `mailto:${prospect.prospect_email}` : undefined}
+                value={prospect.email}
+                link={prospect.email ? `mailto:${prospect.email}` : undefined}
               />
               <InfoRow
                 icon={Linkedin}
                 label="LinkedIn Profile"
                 value="View Profile"
-                link={prospect.prospect_linkedin_url}
+                link={prospect.linkedin_id}
+              />
+              <InfoRow
+                icon={Link}
+                label="Other Source"
+                value="View Source"
+                link={prospect.other_source}
               />
             </div>
           </div>
@@ -97,17 +127,22 @@ export function ProspectDetailsDialog({
               <InfoRow
                 icon={Briefcase}
                 label="Job Title"
-                value={prospect.prospect_title}
+                value={prospect.designation}
               />
               <InfoRow
                 icon={Users}
                 label="Department"
-                value={prospect.prospect_department}
+                value={prospect.department}
               />
               <InfoRow
                 icon={Award}
                 label="Level"
-                value={prospect.prospect_level}
+                value={prospect.level}
+              />
+              <InfoRow
+                icon={FileText}
+                label="Project"
+                value={prospect.project_name}
               />
             </div>
           </div>
@@ -121,7 +156,7 @@ export function ProspectDetailsDialog({
               <InfoRow
                 icon={MapPin}
                 label="Location"
-                value={[prospect.prospect_city, prospect.prospect_state, prospect.prospect_country]
+                value={[prospect.city, prospect.state, prospect.country]
                   .filter(Boolean)
                   .join(", ")}
               />

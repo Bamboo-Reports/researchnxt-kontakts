@@ -6,6 +6,7 @@ import { Filter, Users, X, Plus, Minus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { EnhancedMultiSelect } from "@/components/enhanced-multi-select"
 import { SavedFiltersManager } from "@/components/saved-filters-manager"
 import type { Filters, AvailableOptions, FilterValue } from "@/lib/types"
@@ -60,7 +61,21 @@ export function FiltersSidebar({
 
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Departments</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium">Departments</Label>
+                <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <Checkbox
+                    checked={pendingFilters.includeBlankDepartments}
+                    onCheckedChange={(checked) =>
+                      setPendingFilters((prev) => ({
+                        ...prev,
+                        includeBlankDepartments: checked === true,
+                      }))
+                    }
+                  />
+                  <span>Include blanks</span>
+                </label>
+              </div>
               <EnhancedMultiSelect
                 options={availableOptions.prospectDepartments || []}
                 selected={pendingFilters.prospectDepartments}
@@ -73,7 +88,21 @@ export function FiltersSidebar({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Levels</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium">Levels</Label>
+                <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <Checkbox
+                    checked={pendingFilters.includeBlankLevels}
+                    onCheckedChange={(checked) =>
+                      setPendingFilters((prev) => ({
+                        ...prev,
+                        includeBlankLevels: checked === true,
+                      }))
+                    }
+                  />
+                  <span>Include blanks</span>
+                </label>
+              </div>
               <EnhancedMultiSelect
                 options={availableOptions.prospectLevels || []}
                 selected={pendingFilters.prospectLevels}
@@ -86,7 +115,21 @@ export function FiltersSidebar({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Cities</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium">Cities</Label>
+                <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <Checkbox
+                    checked={pendingFilters.includeBlankCities}
+                    onCheckedChange={(checked) =>
+                      setPendingFilters((prev) => ({
+                        ...prev,
+                        includeBlankCities: checked === true,
+                      }))
+                    }
+                  />
+                  <span>Include blanks</span>
+                </label>
+              </div>
               <EnhancedMultiSelect
                 options={availableOptions.prospectCities || []}
                 selected={pendingFilters.prospectCities}

@@ -1,15 +1,27 @@
 export interface Prospect {
-  prospect_full_name?: string | null
-  prospect_first_name: string | null
-  prospect_last_name: string | null
-  prospect_title: string | null
-  prospect_department: string | null
-  prospect_level: string | null
-  prospect_linkedin_url: string | null
-  prospect_email: string | null
-  prospect_city: string | null
-  prospect_state: string | null
-  prospect_country: string | null
+  rnxt_data_type: string | null
+  project_name: string | null
+  time_stamp: string | null
+  dupe_status: string | null
+  rnxt_id: string | null
+  sf_tal_status: string | null
+  sf_industry: string | null
+  br_account_name: string | null
+  account_name: string | null
+  contacts_type: string | null
+  entity_name: string | null
+  first_name: string | null
+  last_name: string | null
+  designation: string | null
+  department: string | null
+  level: string | null
+  email: string | null
+  optizmo_supression: string | null
+  linkedin_id: string | null
+  other_source: string | null
+  city: string | null
+  state: string | null
+  country: string | null
 }
 
 export interface Profile {
@@ -31,6 +43,9 @@ export interface Filters {
   prospectLevels: FilterValue[]
   prospectCities: FilterValue[]
   prospectTitleKeywords: FilterValue[]
+  includeBlankDepartments: boolean
+  includeBlankLevels: boolean
+  includeBlankCities: boolean
 }
 
 export interface FilterOption {

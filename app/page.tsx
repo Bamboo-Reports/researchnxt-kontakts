@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useLayoutEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/layout/header"
 import { FiltersSidebar } from "@/components/filters/filters-sidebar"
@@ -9,10 +9,8 @@ import { ProspectsTab } from "@/components/tabs/prospects-tab"
 import { LoadingState } from "@/components/states/loading-state"
 import { ErrorState } from "@/components/states/error-state"
 import { getAllData, testConnection, getDatabaseStatus, clearCache } from "./actions"
-import { calculateChartData } from "@/lib/utils/chart-helpers"
 import { exportToExcel } from "@/lib/utils/export-helpers"
-import { createValueMatcher, createKeywordMatcher } from "@/lib/utils/filter-helpers"
-import type { Prospect, Filters, AvailableOptions, FilterOption } from "@/lib/types"
+import type { Prospect, Filters, AvailableOptions } from "@/lib/types"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 
 function DashboardContent() {
@@ -22,22 +20,34 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<string>("")
   const [dbStatus, setDbStatus] = useState<any>(null)
+  const [availableOptions, setAvailableOptions] = useState<AvailableOptions>({
+    prospectDepartments: [],
+    prospectLevels: [],
+    prospectCities: [],
+  })
+  const [filteredCount, setFilteredCount] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
   const [filters, setFilters] = useState<Filters>({
     prospectDepartments: [],
     prospectLevels: [],
     prospectCities: [],
     prospectTitleKeywords: [],
+    includeBlankDepartments: false,
+    includeBlankLevels: false,
+    includeBlankCities: false,
   })
   const [pendingFilters, setPendingFilters] = useState<Filters>({
     prospectDepartments: [],
     prospectLevels: [],
     prospectCities: [],
     prospectTitleKeywords: [],
+    includeBlankDepartments: false,
+    includeBlankLevels: false,
+    includeBlankCities: false,
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(50)
   const [isApplying, setIsApplying] = useState(false)
-  const [prospectsView, setProspectsView] = useState<"chart" | "data">("chart")
   const [authReady, setAuthReady] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
 
@@ -98,7 +108,11 @@ function DashboardContent() {
 
       setConnectionStatus("Loading prospects from database...")
       console.time("dashboard getAllData")
-      const data = await getAllData()
+      const data = await getAllData({
+        page: currentPage,
+        pageSize: itemsPerPage,
+        filters,
+      })
       console.timeEnd("dashboard getAllData")
 
       if (data.error) {
@@ -109,6 +123,9 @@ function DashboardContent() {
 
       const prospectsData = Array.isArray(data.prospects) ? data.prospects : []
       setProspects(prospectsData as Prospect[])
+      setAvailableOptions(data.availableOptions || { prospectDepartments: [], prospectLevels: [], prospectCities: [] })
+      setFilteredCount(data.filteredCount ?? 0)
+      setTotalCount(data.totalCount ?? 0)
       setConnectionStatus(`Successfully loaded: ${prospectsData.length} prospects`)
     } catch (err) {
       console.error("Error loading data:", err)
@@ -119,7 +136,7 @@ function DashboardContent() {
       setLoading(false)
       console.timeEnd("dashboard loadData total")
     }
-  }, [checkDatabaseStatus, testDatabaseConnection])
+  }, [checkDatabaseStatus, testDatabaseConnection, currentPage, itemsPerPage, filters])
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
@@ -179,72 +196,16 @@ function DashboardContent() {
     setCurrentPage(1)
   }, [filters])
 
-  const filteredProspects = useMemo(() => {
-    const matchDepartment = createValueMatcher(filters.prospectDepartments)
-    const matchLevel = createValueMatcher(filters.prospectLevels)
-    const matchCity = createValueMatcher(filters.prospectCities)
-    const matchTitle = createKeywordMatcher(filters.prospectTitleKeywords)
-
-    return prospects.filter((prospect) =>
-      matchDepartment(prospect.prospect_department) &&
-      matchLevel(prospect.prospect_level) &&
-      matchCity(prospect.prospect_city) &&
-      matchTitle(prospect.prospect_title)
-    )
-  }, [prospects, filters])
-
-  const mapToSortedArray = useCallback((map: Map<string, number>): FilterOption[] => {
-    return Array.from(map.entries())
-      .map(([value, count]) => ({ value, count }))
-      .sort((a, b) => b.count - a.count)
-  }, [])
-
-  const availableOptions = useMemo((): AvailableOptions => {
-    const departmentCounts = new Map<string, number>()
-    const levelCounts = new Map<string, number>()
-    const cityCounts = new Map<string, number>()
-
-    filteredProspects.forEach((prospect) => {
-      if (prospect.prospect_department) {
-        departmentCounts.set(
-          prospect.prospect_department,
-          (departmentCounts.get(prospect.prospect_department) || 0) + 1
-        )
-      }
-      if (prospect.prospect_level) {
-        levelCounts.set(
-          prospect.prospect_level,
-          (levelCounts.get(prospect.prospect_level) || 0) + 1
-        )
-      }
-      if (prospect.prospect_city) {
-        cityCounts.set(
-          prospect.prospect_city,
-          (cityCounts.get(prospect.prospect_city) || 0) + 1
-        )
-      }
-    })
-
-    return {
-      prospectDepartments: mapToSortedArray(departmentCounts),
-      prospectLevels: mapToSortedArray(levelCounts),
-      prospectCities: mapToSortedArray(cityCounts),
-    }
-  }, [filteredProspects, mapToSortedArray])
-
-  const prospectChartData = useMemo(() => {
-    return {
-      departmentData: calculateChartData(filteredProspects, "prospect_department"),
-      levelData: calculateChartData(filteredProspects, "prospect_level"),
-    }
-  }, [filteredProspects])
 
   const getTotalActiveFilters = () => {
     return (
       pendingFilters.prospectDepartments.length +
       pendingFilters.prospectLevels.length +
       pendingFilters.prospectCities.length +
-      pendingFilters.prospectTitleKeywords.length
+      pendingFilters.prospectTitleKeywords.length +
+      (pendingFilters.includeBlankDepartments ? 1 : 0) +
+      (pendingFilters.includeBlankLevels ? 1 : 0) +
+      (pendingFilters.includeBlankCities ? 1 : 0)
     )
   }
 
@@ -254,7 +215,7 @@ function DashboardContent() {
   }
 
   const handleExportProspects = () => {
-    exportToExcel(filteredProspects, "prospects-export", "Prospects")
+    exportToExcel(prospects, "prospects-export", "Prospects")
   }
 
   const handleResetFilters = () => {
@@ -263,6 +224,9 @@ function DashboardContent() {
       prospectLevels: [],
       prospectCities: [],
       prospectTitleKeywords: [],
+      includeBlankDepartments: false,
+      includeBlankLevels: false,
+      includeBlankCities: false,
     }
     setPendingFilters(emptyFilters)
     setFilters(emptyFilters)
@@ -304,18 +268,16 @@ function DashboardContent() {
             <div className="flex-1 overflow-y-auto">
               <div className="p-6 pb-[3px]">
                 <SummaryCards
-                  filteredProspectsCount={filteredProspects.length}
-                  totalProspectsCount={prospects.length}
+                  filteredProspectsCount={filteredCount}
+                  totalProspectsCount={totalCount}
                 />
 
                 <ProspectsTab
-                  prospects={filteredProspects}
-                  prospectChartData={prospectChartData}
-                  prospectsView={prospectsView}
-                  setProspectsView={setProspectsView}
+                  prospects={prospects}
                   currentPage={currentPage}
                   setCurrentPage={setCurrentPage}
                   itemsPerPage={itemsPerPage}
+                  filteredCount={filteredCount}
                 />
               </div>
             </div>
