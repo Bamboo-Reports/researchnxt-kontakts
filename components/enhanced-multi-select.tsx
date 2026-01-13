@@ -152,6 +152,7 @@ export const EnhancedMultiSelect = React.memo(function EnhancedMultiSelect({
   isApplying = false,
 }: EnhancedMultiSelectProps) {
   const [open, setOpen] = React.useState(false)
+  const [searchValue, setSearchValue] = React.useState("")
 
   const handleUnselect = React.useCallback((item: FilterValue) => {
     onChange(selected.filter((i) => i.value !== item.value))
@@ -210,7 +211,15 @@ export const EnhancedMultiSelect = React.memo(function EnhancedMultiSelect({
   }, [selected, handleUnselect, handleToggleMode])
 
   const renderOptions = React.useMemo(() => {
-    return options.map((option) => {
+    const normalizedSearch = searchValue.trim().toLowerCase()
+    const filteredOptions = normalizedSearch
+      ? options.filter((option) => {
+          const value = typeof option === "string" ? option : option.value
+          return value.toLowerCase().includes(normalizedSearch)
+        })
+      : options.slice(0, 20)
+
+    return filteredOptions.map((option) => {
       const value = typeof option === "string" ? option : option.value
       const disabled = typeof option === "object" ? (option.disabled ?? false) : false
       const filterValue = selected.find((s) => s.value === value)
@@ -229,7 +238,7 @@ export const EnhancedMultiSelect = React.memo(function EnhancedMultiSelect({
         />
       )
     })
-  }, [options, selected, handleSelect])
+  }, [options, selected, handleSelect, searchValue])
 
   // Count include vs exclude
   const includeCount = selected.filter(s => s.mode === 'include').length
@@ -250,6 +259,12 @@ export const EnhancedMultiSelect = React.memo(function EnhancedMultiSelect({
     }
     prevIsApplying.current = isApplying
   }, [isApplying])
+
+  React.useEffect(() => {
+    if (!open && searchValue) {
+      setSearchValue("")
+    }
+  }, [open, searchValue])
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -287,12 +302,24 @@ export const EnhancedMultiSelect = React.memo(function EnhancedMultiSelect({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[200px] p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Search..." className="h-9" />
+            <Command shouldFilter={false}>
+              <CommandInput
+                placeholder="Search..."
+                className="h-9"
+                value={searchValue}
+                onValueChange={setSearchValue}
+              />
               <CommandList className="max-h-64">
                 <CommandEmpty>No item found.</CommandEmpty>
                 <CommandGroup>
                   {renderOptions}
+                  {searchValue.trim().length === 0 && options.length > 20 && (
+                    <CommandItem disabled value="__hint__">
+                      <span className="text-xs text-muted-foreground">
+                        Showing first 20. Search to see more.
+                      </span>
+                    </CommandItem>
+                  )}
                 </CommandGroup>
               </CommandList>
             </Command>

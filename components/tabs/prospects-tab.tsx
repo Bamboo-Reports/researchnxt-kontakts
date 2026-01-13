@@ -5,24 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Download, PieChartIcon, Table as TableIcon } from "lucide-react"
+import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Download, PieChartIcon } from "lucide-react"
 import { ProspectRow } from "@/components/tables/prospect-row"
-import { PieChartCard } from "@/components/charts/pie-chart-card"
 import { EmptyState } from "@/components/states/empty-state"
 import { ProspectDetailsDialog } from "@/components/dialogs/prospect-details-dialog"
 import { getPaginatedData, getTotalPages, getPageInfo } from "@/lib/utils/helpers"
 import { exportToExcel } from "@/lib/utils/export-helpers"
-import { ViewSwitcher } from "@/components/ui/view-switcher"
 import type { Prospect } from "@/lib/types"
 
 interface ProspectsTabProps {
   prospects: Prospect[]
-  prospectChartData: {
-    departmentData: Array<{ name: string; value: number; fill?: string }>
-    levelData: Array<{ name: string; value: number; fill?: string }>
-  }
-  prospectsView: "chart" | "data"
-  setProspectsView: (view: "chart" | "data") => void
+  filteredCount: number
   currentPage: number
   setCurrentPage: (page: number | ((prev: number) => number)) => void
   itemsPerPage: number
@@ -30,9 +23,7 @@ interface ProspectsTabProps {
 
 export function ProspectsTab({
   prospects,
-  prospectChartData,
-  prospectsView,
-  setProspectsView,
+  filteredCount,
   currentPage,
   setCurrentPage,
   itemsPerPage,
@@ -73,15 +64,14 @@ export function ProspectsTab({
       switch (sort.key) {
         case "name":
           return (
-            prospect.prospect_full_name ||
-            [prospect.prospect_first_name, prospect.prospect_last_name].filter(Boolean).join(" ")
+            [prospect.first_name, prospect.last_name].filter(Boolean).join(" ")
           )
         case "location":
-          return [prospect.prospect_city, prospect.prospect_country].filter(Boolean).join(", ")
+          return [prospect.city, prospect.country].filter(Boolean).join(", ")
         case "title":
-          return prospect.prospect_title
+          return prospect.designation
         default:
-          return prospect.prospect_department
+          return prospect.department
       }
     }
 
@@ -113,64 +103,22 @@ export function ProspectsTab({
   )
 
   // Show empty state when no prospects
-  if (prospects.length === 0) {
+  if (prospects.length === 0 && filteredCount === 0) {
     return <EmptyState type="no-results" />
   }
 
   return (
     <div>
-      {/* Header with View Toggle */}
+      {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <PieChartIcon className="h-5 w-5 text-[hsl(var(--chart-1))]" />
         <h2 className="text-lg font-semibold text-foreground">Prospect Analytics</h2>
         <Badge variant="secondary" className="ml-2">
-          {prospects.length} Prospects
+          {filteredCount.toLocaleString()} Prospects
         </Badge>
-        <ViewSwitcher
-          value={prospectsView}
-          onValueChange={(value) => setProspectsView(value as "chart" | "data")}
-          options={[
-            {
-              value: "chart",
-              label: <span className="text-[hsl(var(--chart-1))]">Charts</span>,
-              icon: (
-                <PieChartIcon className="h-4 w-4 text-[hsl(var(--chart-1))]" />
-              ),
-            },
-            {
-              value: "data",
-              label: <span className="text-[hsl(var(--chart-2))]">Data</span>,
-              icon: (
-                <TableIcon className="h-4 w-4 text-[hsl(var(--chart-2))]" />
-              ),
-            },
-          ]}
-          className="ml-auto"
-        />
       </div>
 
-      {/* Charts Section */}
-      {prospectsView === "chart" && (
-        <div className="mb-6 animate-fade-in">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <PieChartCard
-              title="Department Split"
-              data={prospectChartData.departmentData}
-              countLabel="Total Prospects"
-              showBigPercentage
-            />
-            <PieChartCard
-              title="Level Split"
-              data={prospectChartData.levelData}
-              countLabel="Total Prospects"
-              showBigPercentage
-            />
-          </div>
-        </div>
-      )}
-
        {/* Data Table */}
-       {prospectsView === "data" && (
          <Card className="flex flex-col h-[calc(100vh-22.5rem)] border shadow-sm animate-fade-in">
            <CardHeader className="shrink-0 px-6 py-4">
              <div className="flex flex-wrap items-center gap-3">
@@ -201,7 +149,7 @@ export function ProspectsTab({
                     {getPaginatedData(sortedProspects, currentPage, itemsPerPage).map(
                       (prospect, index) => (
                         <ProspectRow
-                          key={`${prospect.prospect_email}-${index}`}
+                          key={`${prospect.email}-${index}`}
                           prospect={prospect}
                           onClick={() => handleProspectClick(prospect)}
                         />
@@ -214,8 +162,8 @@ export function ProspectsTab({
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-6 py-4 border-t shrink-0 bg-muted/20">
                       <div className="flex flex-wrap items-center gap-3">
                         <p className="text-sm text-muted-foreground">
-                          {getPageInfo(currentPage, prospects.length, itemsPerPage).startItem}-{getPageInfo(currentPage, prospects.length, itemsPerPage).endItem} of{" "}
-                          {prospects.length}
+                          {getPageInfo(currentPage, filteredCount, itemsPerPage).startItem}-{getPageInfo(currentPage, filteredCount, itemsPerPage).endItem} of{" "}
+                          {filteredCount}
                         </p>
                         <Button
                           variant="outline"
@@ -227,7 +175,7 @@ export function ProspectsTab({
                       Export
                     </Button>
                   </div>
-                  {getTotalPages(prospects.length, itemsPerPage) > 1 && (
+                  {getTotalPages(filteredCount, itemsPerPage) > 1 && (
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
@@ -239,18 +187,18 @@ export function ProspectsTab({
                         Previous
                       </Button>
                       <span className="text-sm text-muted-foreground min-w-[60px] text-center">
-                        {currentPage}/{getTotalPages(prospects.length, itemsPerPage)}
+                        {currentPage}/{getTotalPages(filteredCount, itemsPerPage)}
                       </span>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() =>
                           setCurrentPage((prev) =>
-                            Math.min(prev + 1, getTotalPages(prospects.length, itemsPerPage))
+                            Math.min(prev + 1, getTotalPages(filteredCount, itemsPerPage))
                           )
                         }
                         disabled={
-                          currentPage === getTotalPages(prospects.length, itemsPerPage)
+                          currentPage === getTotalPages(filteredCount, itemsPerPage)
                         }
                         className="h-8"
                       >
@@ -262,7 +210,6 @@ export function ProspectsTab({
               )}
             </CardContent>
          </Card>
-       )}
 
       {/* Prospect Details Dialog */}
       <ProspectDetailsDialog

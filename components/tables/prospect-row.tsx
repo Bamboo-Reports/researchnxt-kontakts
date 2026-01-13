@@ -8,9 +8,7 @@ interface ProspectRowProps {
 }
 
 export const ProspectRow = memo(({ prospect, onClick }: ProspectRowProps) => {
-  const fullName =
-    prospect.prospect_full_name ||
-    [prospect.prospect_first_name, prospect.prospect_last_name].filter(Boolean).join(" ")
+  const fullName = [prospect.first_name, prospect.last_name].filter(Boolean).join(" ")
   const initials = fullName
     .split(" ")
     .filter(Boolean)
@@ -32,10 +30,10 @@ export const ProspectRow = memo(({ prospect, onClick }: ProspectRowProps) => {
       </TableCell>
       <TableCell className="font-medium">{fullName || "N/A"}</TableCell>
       <TableCell>
-        {[prospect.prospect_city, prospect.prospect_country].filter(Boolean).join(", ") || "N/A"}
+        {[prospect.city, prospect.country].filter(Boolean).join(", ") || "N/A"}
       </TableCell>
-      <TableCell>{prospect.prospect_title}</TableCell>
-      <TableCell>{prospect.prospect_department}</TableCell>
+      <TableCell>{prospect.designation}</TableCell>
+      <TableCell>{prospect.department}</TableCell>
     </TableRow>
   )
 })

@@ -51,7 +51,10 @@ const calculateActiveFilters = (filters: Filters) => {
     filters.prospectDepartments.length +
     filters.prospectLevels.length +
     filters.prospectCities.length +
-    filters.prospectTitleKeywords.length
+    filters.prospectTitleKeywords.length +
+    (filters.includeBlankDepartments ? 1 : 0) +
+    (filters.includeBlankLevels ? 1 : 0) +
+    (filters.includeBlankCities ? 1 : 0)
   )
 }
 
@@ -61,6 +64,9 @@ const withFilterDefaults = (filters: Partial<Filters> | null | undefined): Filte
     prospectLevels: filters?.prospectLevels ?? [],
     prospectCities: filters?.prospectCities ?? [],
     prospectTitleKeywords: filters?.prospectTitleKeywords ?? [],
+    includeBlankDepartments: filters?.includeBlankDepartments ?? false,
+    includeBlankLevels: filters?.includeBlankLevels ?? false,
+    includeBlankCities: filters?.includeBlankCities ?? false,
   }
 }
 
@@ -105,6 +111,9 @@ const renderFilterValues = (values: FilterValueLike[] = [], label: string) =>
       />
     )
   })
+
+const renderBlankBadge = (enabled: boolean, label: string) =>
+  enabled ? <FilterBadge filterKey={label} value="(blanks)" /> : null
 
 // Memoized SavedFilterCard component to prevent re-renders
 const SavedFilterCard = memo(({
@@ -170,8 +179,11 @@ const SavedFilterCard = memo(({
           </div>
           <div className="flex flex-wrap gap-1">
             {renderFilterValues(filter.filters.prospectDepartments, "Department")}
+            {renderBlankBadge(filter.filters.includeBlankDepartments, "Department")}
             {renderFilterValues(filter.filters.prospectLevels, "Prospect Level")}
+            {renderBlankBadge(filter.filters.includeBlankLevels, "Prospect Level")}
             {renderFilterValues(filter.filters.prospectCities, "Prospect City")}
+            {renderBlankBadge(filter.filters.includeBlankCities, "Prospect City")}
             {renderFilterValues(filter.filters.prospectTitleKeywords, "Job Title")}
           </div>
         </div>
