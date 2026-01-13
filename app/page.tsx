@@ -10,7 +10,7 @@ import { LoadingState } from "@/components/states/loading-state"
 import { ErrorState } from "@/components/states/error-state"
 import { getProspects, getCounts, getFilterOptions, testConnection, getDatabaseStatus, clearCache } from "./actions"
 import { exportToExcel } from "@/lib/utils/export-helpers"
-import type { Prospect, Filters, AvailableOptions } from "@/lib/types"
+import type { Prospect, Filters, AvailableOptions, BlankCounts } from "@/lib/types"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 
 function DashboardContent() {
@@ -37,6 +37,20 @@ function DashboardContent() {
     prospectOptizmoSuppressions: [],
     prospectCities: [],
     prospectCountries: [],
+  })
+  const [blankCounts, setBlankCounts] = useState<BlankCounts>({
+    prospectAccountNames: 0,
+    prospectRnxtDataTypes: 0,
+    prospectProjectNames: 0,
+    prospectDupeStatuses: 0,
+    prospectSfTalStatuses: 0,
+    prospectSfIndustries: 0,
+    prospectContactsTypes: 0,
+    prospectDepartments: 0,
+    prospectLevels: 0,
+    prospectOptizmoSuppressions: 0,
+    prospectCities: 0,
+    prospectCountries: 0,
   })
   const [filteredCount, setFilteredCount] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
@@ -98,7 +112,6 @@ function DashboardContent() {
   const [itemsPerPage] = useState(50)
   const [authReady, setAuthReady] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const isApplying = filterLoading && hasLoadedOnce
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previousFiltersRef = useRef<Filters | null>(null)
 
@@ -243,6 +256,22 @@ function DashboardContent() {
           prospectOptizmoSuppressions: [],
           prospectCities: [],
           prospectCountries: [],
+        }
+      )
+      setBlankCounts(
+        options.blankCounts || {
+          prospectAccountNames: 0,
+          prospectRnxtDataTypes: 0,
+          prospectProjectNames: 0,
+          prospectDupeStatuses: 0,
+          prospectSfTalStatuses: 0,
+          prospectSfIndustries: 0,
+          prospectContactsTypes: 0,
+          prospectDepartments: 0,
+          prospectLevels: 0,
+          prospectOptizmoSuppressions: 0,
+          prospectCities: 0,
+          prospectCountries: 0,
         }
       )
     } catch (err) {
@@ -434,7 +463,7 @@ function DashboardContent() {
             filters={filters}
             pendingFilters={pendingFilters}
             availableOptions={availableOptions}
-            isApplying={isApplying}
+            blankCounts={blankCounts}
             setPendingFilters={setPendingFilters}
             resetFilters={handleResetFilters}
             handleExportProspects={handleExportProspects}
