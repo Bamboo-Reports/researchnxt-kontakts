@@ -46,33 +46,8 @@ interface SavedFilter {
 
 type FilterValueLike = FilterValue | string | null | undefined
 
-const DEFAULT_REVENUE_RANGE: [number, number] = [0, 1000000]
-
 const calculateActiveFilters = (filters: Filters) => {
-  const [minRevenue, maxRevenue] = filters.accountRevenueRange || DEFAULT_REVENUE_RANGE
-  const revenueFilterActive = minRevenue !== DEFAULT_REVENUE_RANGE[0] || maxRevenue !== DEFAULT_REVENUE_RANGE[1]
-
   return (
-    filters.accountCountries.length +
-    filters.accountRegions.length +
-    filters.accountIndustries.length +
-    filters.accountSubIndustries.length +
-    filters.accountPrimaryCategories.length +
-    filters.accountPrimaryNatures.length +
-    filters.accountNasscomStatuses.length +
-    filters.accountEmployeesRanges.length +
-    filters.accountCenterEmployees.length +
-    (revenueFilterActive ? 1 : 0) +
-    (filters.includeNullRevenue ? 1 : 0) +
-    filters.accountNameKeywords.length +
-    filters.centerTypes.length +
-    filters.centerFocus.length +
-    filters.centerCities.length +
-    filters.centerStates.length +
-    filters.centerCountries.length +
-    filters.centerEmployees.length +
-    filters.centerStatuses.length +
-    filters.functionTypes.length +
     filters.prospectDepartments.length +
     filters.prospectLevels.length +
     filters.prospectCities.length +
@@ -81,36 +56,11 @@ const calculateActiveFilters = (filters: Filters) => {
 }
 
 const withFilterDefaults = (filters: Partial<Filters> | null | undefined): Filters => {
-  const revenueRange = Array.isArray(filters?.accountRevenueRange) && filters?.accountRevenueRange.length === 2
-    ? filters.accountRevenueRange.map(Number) as [number, number]
-    : DEFAULT_REVENUE_RANGE
-
   return {
-    accountCountries: filters?.accountCountries ?? [],
-    accountRegions: filters?.accountRegions ?? [],
-    accountIndustries: filters?.accountIndustries ?? [],
-    accountSubIndustries: filters?.accountSubIndustries ?? [],
-    accountPrimaryCategories: filters?.accountPrimaryCategories ?? [],
-    accountPrimaryNatures: filters?.accountPrimaryNatures ?? [],
-    accountNasscomStatuses: filters?.accountNasscomStatuses ?? [],
-    accountEmployeesRanges: filters?.accountEmployeesRanges ?? [],
-    accountCenterEmployees: filters?.accountCenterEmployees ?? [],
-    accountRevenueRange: revenueRange,
-    includeNullRevenue: filters?.includeNullRevenue ?? false,
-    accountNameKeywords: filters?.accountNameKeywords ?? [],
-    centerTypes: filters?.centerTypes ?? [],
-    centerFocus: filters?.centerFocus ?? [],
-    centerCities: filters?.centerCities ?? [],
-    centerStates: filters?.centerStates ?? [],
-    centerCountries: filters?.centerCountries ?? [],
-    centerEmployees: filters?.centerEmployees ?? [],
-    centerStatuses: filters?.centerStatuses ?? [],
-    functionTypes: filters?.functionTypes ?? [],
     prospectDepartments: filters?.prospectDepartments ?? [],
     prospectLevels: filters?.prospectLevels ?? [],
     prospectCities: filters?.prospectCities ?? [],
     prospectTitleKeywords: filters?.prospectTitleKeywords ?? [],
-    searchTerm: filters?.searchTerm ?? "",
   }
 }
 
@@ -172,9 +122,6 @@ const SavedFilterCard = memo(({
   const filterCount = useCallback(() => {
     return calculateActiveFilters(filter.filters)
   }, [filter.filters])
-  const [minRevenue, maxRevenue] = filter.filters.accountRevenueRange || DEFAULT_REVENUE_RANGE
-  const revenueFilterActive = minRevenue !== DEFAULT_REVENUE_RANGE[0] || maxRevenue !== DEFAULT_REVENUE_RANGE[1]
-
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -222,40 +169,10 @@ const SavedFilterCard = memo(({
             </Button>
           </div>
           <div className="flex flex-wrap gap-1">
-            {renderFilterValues(filter.filters.accountNameKeywords, "Account Name")}
-            {renderFilterValues(filter.filters.accountCountries, "Country")}
-            {renderFilterValues(filter.filters.accountRegions, "Region")}
-            {renderFilterValues(filter.filters.accountIndustries, "Industry")}
-            {renderFilterValues(filter.filters.accountSubIndustries, "Sub Industry")}
-            {renderFilterValues(filter.filters.accountPrimaryCategories, "Category")}
-            {renderFilterValues(filter.filters.accountPrimaryNatures, "Nature")}
-            {renderFilterValues(filter.filters.accountNasscomStatuses, "NASSCOM")}
-            {renderFilterValues(filter.filters.accountEmployeesRanges, "Emp Range")}
-            {renderFilterValues(filter.filters.accountCenterEmployees, "Center Emp")}
-            {renderFilterValues(filter.filters.centerTypes, "Type")}
-            {renderFilterValues(filter.filters.centerFocus, "Focus")}
-            {renderFilterValues(filter.filters.centerCities, "City")}
-            {renderFilterValues(filter.filters.centerStates, "State")}
-            {renderFilterValues(filter.filters.centerCountries, "Center Country")}
-            {renderFilterValues(filter.filters.centerEmployees, "Center Employees")}
-            {renderFilterValues(filter.filters.centerStatuses, "Center Status")}
-            {renderFilterValues(filter.filters.functionTypes, "Function")}
             {renderFilterValues(filter.filters.prospectDepartments, "Department")}
             {renderFilterValues(filter.filters.prospectLevels, "Prospect Level")}
             {renderFilterValues(filter.filters.prospectCities, "Prospect City")}
             {renderFilterValues(filter.filters.prospectTitleKeywords, "Job Title")}
-            {revenueFilterActive && (
-              <FilterBadge
-                filterKey="Revenue"
-                value={`${minRevenue.toLocaleString()} - ${maxRevenue.toLocaleString()}`}
-              />
-            )}
-            {filter.filters.includeNullRevenue && (
-              <FilterBadge filterKey="Revenue" value="Include null revenue" />
-            )}
-            {filter.filters.searchTerm && (
-              <FilterBadge filterKey="Search" value={`"${filter.filters.searchTerm}"`} />
-            )}
           </div>
         </div>
       </CardContent>

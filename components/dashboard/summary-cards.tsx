@@ -3,19 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 interface SummaryCardsProps {
-  filteredAccountsCount: number
-  totalAccountsCount: number
-  filteredCentersCount: number
-  totalCentersCount: number
   filteredProspectsCount: number
   totalProspectsCount: number
 }
 
 export const SummaryCards = React.memo(function SummaryCards({
-  filteredAccountsCount,
-  totalAccountsCount,
-  filteredCentersCount,
-  totalCentersCount,
   filteredProspectsCount,
   totalProspectsCount,
 }: SummaryCardsProps) {
@@ -63,18 +55,6 @@ export const SummaryCards = React.memo(function SummaryCards({
 
   const cards = [
     {
-      title: "Total Accounts",
-      value: filteredAccountsCount,
-      total: totalAccountsCount,
-      colorVar: "--chart-1",
-    },
-    {
-      title: "Total Centers",
-      value: filteredCentersCount,
-      total: totalCentersCount,
-      colorVar: "--chart-2",
-    },
-    {
       title: "Total Prospects",
       value: filteredProspectsCount,
       total: totalProspectsCount,
@@ -83,7 +63,7 @@ export const SummaryCards = React.memo(function SummaryCards({
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-1 gap-4 mb-6">
       {cards.map((card) => (
         <Card
           key={card.title}
