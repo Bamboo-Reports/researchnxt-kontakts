@@ -114,6 +114,9 @@ function DashboardContent() {
   const [userId, setUserId] = useState<string | null>(null)
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previousFiltersRef = useRef<Filters | null>(null)
+  const exportPageSize = 500
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null)
 
   const checkDatabaseStatus = useCallback(async () => {
     try {
@@ -403,8 +406,42 @@ function DashboardContent() {
     setFilters(savedFilters)
   }
 
-  const handleExportProspects = () => {
-    exportToExcel(prospects, "prospects-export", "Prospects")
+  const handleExportProspects = async () => {
+    try {
+      setIsExporting(true)
+      if (filteredCount <= prospects.length) {
+        setExportProgress({ current: 1, total: 1 })
+        exportToExcel(prospects, "prospects-export", "Prospects")
+        return
+      }
+
+      setConnectionStatus("Preparing full export...")
+      const totalPages = Math.ceil(filteredCount / exportPageSize)
+      const allProspects: Prospect[] = []
+      setExportProgress({ current: 0, total: totalPages })
+
+      for (let page = 1; page <= totalPages; page += 1) {
+        setExportProgress({ current: page, total: totalPages })
+        const pageResults = await getProspects({
+          page,
+          pageSize: exportPageSize,
+          filters,
+        })
+        if (!Array.isArray(pageResults)) {
+          break
+        }
+        allProspects.push(...(pageResults as Prospect[]))
+      }
+
+      exportToExcel(allProspects, "prospects-export", "Prospects")
+    } catch (err) {
+      console.error("Error exporting prospects:", err)
+      setError("Failed to export prospects")
+    } finally {
+      setConnectionStatus("")
+      setIsExporting(false)
+      setExportProgress(null)
+    }
   }
 
   const handleResetFilters = () => {
@@ -467,6 +504,7 @@ function DashboardContent() {
             setPendingFilters={setPendingFilters}
             resetFilters={handleResetFilters}
             handleExportProspects={handleExportProspects}
+            exportState={{ isExporting, progress: exportProgress }}
             getTotalActiveFilters={getTotalActiveFilters}
             handleLoadSavedFilters={handleLoadSavedFilters}
           />

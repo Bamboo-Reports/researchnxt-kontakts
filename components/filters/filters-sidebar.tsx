@@ -19,6 +19,7 @@ interface FiltersSidebarProps {
   setPendingFilters: React.Dispatch<React.SetStateAction<Filters>>
   resetFilters: () => void
   handleExportProspects: () => void
+  exportState?: { isExporting: boolean; progress: { current: number; total: number } | null }
   getTotalActiveFilters: () => number
   handleLoadSavedFilters: (savedFilters: Filters) => void
 }
@@ -31,6 +32,7 @@ export function FiltersSidebar({
   setPendingFilters,
   resetFilters,
   handleExportProspects,
+  exportState,
   getTotalActiveFilters,
   handleLoadSavedFilters,
 }: FiltersSidebarProps) {
@@ -135,6 +137,7 @@ export function FiltersSidebar({
             totalActiveFilters={getTotalActiveFilters()}
             onReset={resetFilters}
             onExport={handleExportProspects}
+            exportState={exportState}
           />
         </div>
 

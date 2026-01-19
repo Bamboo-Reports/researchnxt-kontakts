@@ -112,6 +112,7 @@ interface SavedFiltersManagerProps {
   totalActiveFilters: number
   onReset?: () => void
   onExport?: () => void
+  exportState?: { isExporting: boolean; progress: { current: number; total: number } | null }
 }
 
 // Safely extract label/mode from saved filter values (handles legacy string arrays too)
@@ -253,7 +254,8 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
   onLoadFilters,
   totalActiveFilters,
   onReset,
-  onExport
+  onExport,
+  exportState
 }: SavedFiltersManagerProps) {
   const supabase = getSupabaseBrowserClient()
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([])
@@ -562,9 +564,14 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
               variant="default"
               size="sm"
               onClick={onExport}
+              disabled={exportState?.isExporting}
               className="w-full h-8 text-xs font-medium shadow-none hover:shadow-sm transition-all"
             >
-              Export
+              {exportState?.isExporting
+                ? exportState.progress?.total
+                  ? `Exporting ${exportState.progress.current}/${exportState.progress.total}`
+                  : "Exporting..."
+                : "Export"}
             </Button>
           )}
         </div>

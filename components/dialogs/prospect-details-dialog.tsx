@@ -24,6 +24,7 @@ import {
   Factory,
   ShieldAlert,
   ArrowUpRight,
+  Phone,
 } from "lucide-react"
 import type { Prospect } from "@/lib/types"
 
@@ -126,6 +127,26 @@ export function ProspectDetailsDialog({
               label: "Email",
               value: prospect.email,
               link: prospect.email ? `mailto:${prospect.email}` : undefined,
+            },
+            {
+              icon: Phone,
+              label: "Boardline",
+              value: prospect.boardline,
+              link: prospect.boardline ? `tel:${prospect.boardline}` : undefined,
+            },
+            {
+              icon: Phone,
+              label: "Mobile Phone",
+              value: prospect.mobile_phone,
+              link: prospect.mobile_phone ? `tel:${prospect.mobile_phone}` : undefined,
+            },
+            {
+              icon: Phone,
+              label: "Mobile Phone (Secondary)",
+              value: prospect.mobile_phone_secondary,
+              link: prospect.mobile_phone_secondary
+                ? `tel:${prospect.mobile_phone_secondary}`
+                : undefined,
             },
             {
               icon: Linkedin,
