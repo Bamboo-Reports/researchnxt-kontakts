@@ -22,6 +22,9 @@ export interface Prospect {
   city: string | null
   state: string | null
   country: string | null
+  boardline: string | null
+  mobile_phone: string | null
+  mobile_phone_secondary: string | null
 }
 
 export interface Profile {
