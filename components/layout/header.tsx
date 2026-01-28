@@ -90,8 +90,8 @@ export const Header = React.memo(function Header({ onRefresh }: HeaderProps) {
             <Image src="/logo.svg" alt="Bamboo Reports logo" width={32} height={32} className="h-8 w-auto" priority />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onRefresh} className="h-8 px-3 group" title="Refresh">
-              <RefreshCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-300" />
+            <Button variant="ghost" size="sm" onClick={onRefresh} className="h-8 px-3" title="Refresh">
+              <RefreshCw className="h-4 w-4" />
             </Button>
             <ThemeToggle />
             <DropdownMenu>

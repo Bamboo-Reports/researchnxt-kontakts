@@ -198,7 +198,33 @@ export async function getProspects({ page = 1, pageSize = DEFAULT_PAGE_SIZE, fil
     const offsetParam = params.length + 2
     const offset = (safePage - 1) * safePageSize
     const query = `
-      SELECT *
+      SELECT
+        rnxt_data_type,
+        project_name,
+        time_stamp,
+        dupe_status,
+        rnxt_id,
+        sf_tal_status,
+        sf_industry,
+        br_account_name,
+        account_name,
+        contacts_type,
+        entity_name,
+        first_name,
+        last_name,
+        designation,
+        department,
+        level,
+        email,
+        optizmo_supression,
+        linkedin_id,
+        other_source,
+        city,
+        state,
+        country,
+        boardline,
+        mobile_phone,
+        mobile_phone_secondary
       FROM rnxt_db
       ${whereClause}
       ORDER BY last_name, first_name
