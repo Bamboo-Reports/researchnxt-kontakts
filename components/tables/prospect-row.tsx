@@ -7,7 +7,10 @@ interface ProspectRowProps {
   onClick: () => void
 }
 
-export const ProspectRow = memo(({ prospect, onClick }: ProspectRowProps) => {
+export const ProspectRow = memo(function ProspectRow({
+  prospect,
+  onClick,
+}: ProspectRowProps): JSX.Element {
   const fullName = [prospect.first_name, prospect.last_name].filter(Boolean).join(" ")
   const initials = fullName
     .split(" ")

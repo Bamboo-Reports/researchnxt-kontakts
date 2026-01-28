@@ -1,18 +1,24 @@
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { AlertCircle, Copy, Database, ExternalLink, Info, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, Info, Database, RefreshCw, ExternalLink, Copy } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import type { DatabaseStatus } from "@/lib/types"
 import { copyToClipboard } from "@/lib/utils/helpers"
 
 interface ErrorStateProps {
   error: string
-  dbStatus?: any
+  dbStatus?: DatabaseStatus | null
   onRetry: () => void
   onClearCache: () => void
 }
 
-export function ErrorState({ error, dbStatus, onRetry, onClearCache }: ErrorStateProps) {
-  const isUrlMissing = dbStatus && !dbStatus.hasUrl
+export function ErrorState({
+  error,
+  dbStatus,
+  onRetry,
+  onClearCache,
+}: ErrorStateProps): JSX.Element {
+  const isUrlMissing = Boolean(dbStatus && !dbStatus.hasUrl)
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -21,7 +27,9 @@ export function ErrorState({ error, dbStatus, onRetry, onClearCache }: ErrorStat
           <div className="flex flex-col items-center text-center space-y-6">
             <AlertCircle className="h-16 w-16 text-red-600 dark:text-red-500" />
             <div>
-              <h2 className="text-2xl font-semibold mb-2 text-red-600 dark:text-red-500">Database Configuration Error</h2>
+              <h2 className="text-2xl font-semibold mb-2 text-red-600 dark:text-red-500">
+                Database Configuration Error
+              </h2>
               <p className="text-muted-foreground mb-4">{error}</p>
             </div>
 
@@ -62,7 +70,7 @@ export function ErrorState({ error, dbStatus, onRetry, onClearCache }: ErrorStat
                         2
                       </div>
                       <div>
-                        <p className="font-medium">Select your project → Settings → Environment Variables</p>
+                        <p className="font-medium">Select your project -&gt; Settings -&gt; Environment Variables</p>
                       </div>
                     </div>
 
@@ -75,7 +83,13 @@ export function ErrorState({ error, dbStatus, onRetry, onClearCache }: ErrorStat
                         <div className="bg-card p-3 rounded border space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="font-mono text-sm">Name: DATABASE_URL</span>
-                            <Button variant="ghost" size="sm" onClick={() => copyToClipboard("DATABASE_URL")}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                void copyToClipboard("DATABASE_URL")
+                              }}
+                            >
                               <Copy className="h-4 w-4" />
                             </Button>
                           </div>
@@ -103,8 +117,8 @@ export function ErrorState({ error, dbStatus, onRetry, onClearCache }: ErrorStat
                 <Alert>
                   <Database className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Need your Neon connection string?</strong> Go to your Neon dashboard → Select your
-                    database → Connection Details → Copy the connection string.
+                    <strong>Need your Neon connection string?</strong> Go to your Neon dashboard -&gt; Select your
+                    database -&gt; Connection Details -&gt; Copy the connection string.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -116,14 +130,26 @@ export function ErrorState({ error, dbStatus, onRetry, onClearCache }: ErrorStat
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
                     <span>Database URL:</span>
-                    <span className={dbStatus.hasUrl ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
-                      {dbStatus.hasUrl ? "✓ Configured" : "✗ Missing"}
+                    <span
+                      className={
+                        dbStatus.hasUrl
+                          ? "text-green-600 dark:text-green-500"
+                          : "text-red-600 dark:text-red-500"
+                      }
+                    >
+                      {dbStatus.hasUrl ? "Configured" : "Missing"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Connection:</span>
-                    <span className={dbStatus.hasConnection ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"}>
-                      {dbStatus.hasConnection ? "✓ Initialized" : "✗ Failed"}
+                    <span
+                      className={
+                        dbStatus.hasConnection
+                          ? "text-green-600 dark:text-green-500"
+                          : "text-red-600 dark:text-red-500"
+                      }
+                    >
+                      {dbStatus.hasConnection ? "Initialized" : "Failed"}
                     </span>
                   </div>
                   <div className="flex justify-between">

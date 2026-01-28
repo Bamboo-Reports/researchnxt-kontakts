@@ -1,6 +1,7 @@
-import type { Metadata } from 'next'
-import './globals.css'
-import { ThemeProvider } from '@/components/theme-provider'
+import type { Metadata } from "next"
+import type { ReactNode } from "react"
+import { ThemeProvider } from "@/components/theme-provider"
+import "./globals.css"
 
 export const metadata: Metadata = {
   title: 'Kontakts-ResearchNXT',
@@ -11,8 +12,8 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
-}>) {
+  children: ReactNode
+}>): JSX.Element {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

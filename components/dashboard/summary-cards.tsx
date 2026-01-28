@@ -10,8 +10,14 @@ interface SummaryCardsProps {
 export const SummaryCards = React.memo(function SummaryCards({
   filteredProspectsCount,
   totalProspectsCount,
-}: SummaryCardsProps) {
-  const AnimatedNumber = ({ value, className }: { value: number; className?: string }) => {
+}: SummaryCardsProps): JSX.Element {
+  const AnimatedNumber = ({
+    value,
+    className,
+  }: {
+    value: number
+    className?: string
+  }): JSX.Element => {
     return (
       <span
         className={cn(

@@ -1,7 +1,7 @@
 "use server"
 
 import { neon } from "@neondatabase/serverless"
-import type { Filters, FilterValue } from "@/lib/types"
+import type { AvailableOptions, BlankCounts, Filters, FilterValue, Prospect } from "@/lib/types"
 
 // ============================================
 // CONFIGURATION & SETUP
@@ -12,7 +12,83 @@ const DEFAULT_PAGE_SIZE = 50
 const MAX_PAGE_SIZE = 500
 const dataCache = new Map<string, { data: any; timestamp: number }>()
 
-let sql: any = null
+type CountsResult = {
+  filteredCount: number
+  totalCount: number
+  error: string | null
+}
+
+type FilterOptionsResult = {
+  availableOptions: AvailableOptions
+  blankCounts: BlankCounts
+  error: string | null
+}
+
+type AllDataResult = {
+  prospects: Prospect[]
+  filteredCount: number
+  totalCount: number
+  availableOptions: AvailableOptions
+  blankCounts: BlankCounts
+  error: string | null
+}
+
+type DatabaseStatusResult = {
+  hasUrl: boolean
+  hasConnection: boolean
+  urlLength: number
+  environment: string
+  cacheSize: number
+  cacheKeys: string[]
+  error?: string
+}
+
+const createEmptyAvailableOptions = (): AvailableOptions => ({
+  prospectAccountNames: [],
+  prospectRnxtDataTypes: [],
+  prospectProjectNames: [],
+  prospectDupeStatuses: [],
+  prospectSfTalStatuses: [],
+  prospectSfIndustries: [],
+  prospectContactsTypes: [],
+  prospectDepartments: [],
+  prospectLevels: [],
+  prospectOptizmoSuppressions: [],
+  prospectCities: [],
+  prospectCountries: [],
+})
+
+const createEmptyBlankCounts = (): BlankCounts => ({
+  prospectAccountNames: 0,
+  prospectRnxtDataTypes: 0,
+  prospectProjectNames: 0,
+  prospectDupeStatuses: 0,
+  prospectSfTalStatuses: 0,
+  prospectSfIndustries: 0,
+  prospectContactsTypes: 0,
+  prospectDepartments: 0,
+  prospectLevels: 0,
+  prospectOptizmoSuppressions: 0,
+  prospectCities: 0,
+  prospectCountries: 0,
+})
+
+const createEmptyFilterOptionsResult = (error: string): FilterOptionsResult => ({
+  availableOptions: createEmptyAvailableOptions(),
+  blankCounts: createEmptyBlankCounts(),
+  error,
+})
+
+const createEmptyAllDataResult = (error: string): AllDataResult => ({
+  prospects: [],
+  filteredCount: 0,
+  totalCount: 0,
+  availableOptions: createEmptyAvailableOptions(),
+  blankCounts: createEmptyBlankCounts(),
+  error,
+})
+
+let sql: ReturnType<typeof neon> | null = null
 
 try {
   if (!process.env.DATABASE_URL) {
@@ -53,12 +129,12 @@ function getCachedData<T>(key: string): T | null {
   return null
 }
 
-function setCachedData(key: string, data: any): void {
+function setCachedData(key: string, data: unknown): void {
   dataCache.set(key, { data, timestamp: Date.now() })
   console.log(`Cache set for: ${key}`)
 }
 
-export async function clearCache() {
+export async function clearCache(): Promise<{ success: true; message: string }> {
   dataCache.clear()
   console.log("Cache cleared")
   return { success: true, message: "Cache cleared successfully" }
@@ -106,7 +182,7 @@ const normalizeFilters = (filters?: Filters): Filters => ({
   includeBlankCountries: filters?.includeBlankCountries ?? false,
 })
 
-const splitFilterValues = (filterArray: FilterValue[]) => {
+const splitFilterValues = (filterArray: FilterValue[]): { include: string[]; exclude: string[] } => {
   const include: string[] = []
   const exclude: string[] = []
 
@@ -122,7 +198,7 @@ const splitFilterValues = (filterArray: FilterValue[]) => {
   return { include, exclude }
 }
 
-const buildFilterQuery = (filters: Filters) => {
+const buildFilterQuery = (filters: Filters): { whereClause: string; params: any[] } => {
   const clauses: string[] = []
   const params: any[] = []
 
@@ -174,12 +250,16 @@ const buildFilterQuery = (filters: Filters) => {
   return { whereClause, params }
 }
 
-const appendWhereCondition = (whereClause: string, condition: string) => {
+const appendWhereCondition = (whereClause: string, condition: string): string => {
   if (!whereClause) return `WHERE ${condition}`
   return `${whereClause} AND ${condition}`
 }
 
-export async function getProspects({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filters }: DataQueryParams = {}) {
+export async function getProspects({
+  page = 1,
+  pageSize = DEFAULT_PAGE_SIZE,
+  filters,
+}: DataQueryParams = {}): Promise<Prospect[]> {
   try {
     if (!sql) {
       throw new Error("Database connection not initialized")
@@ -190,7 +270,7 @@ export async function getProspects({ page = 1, pageSize = DEFAULT_PAGE_SIZE, fil
     const normalizedFilters = normalizeFilters(filters)
     const { whereClause, params } = buildFilterQuery(normalizedFilters)
     const cacheKey = `prospects:${safePage}:${safePageSize}:${JSON.stringify(normalizedFilters)}`
-    const cached = getCachedData(cacheKey)
+    const cached = getCachedData<Prospect[]>(cacheKey)
     if (cached) return cached
 
     console.log("Fetching prospects from database...")
@@ -231,18 +311,20 @@ export async function getProspects({ page = 1, pageSize = DEFAULT_PAGE_SIZE, fil
       LIMIT $${limitParam}
       OFFSET $${offsetParam}
     `
-    const prospects = await fetchWithRetry(() => sql.query(query, [...params, safePageSize, offset]))
+    const prospects = await fetchWithRetry(() =>
+      sql.query(query, [...params, safePageSize, offset])
+    )
     console.log(`Successfully fetched ${prospects.length} prospects`)
 
     setCachedData(cacheKey, prospects)
-    return prospects
+    return prospects as Prospect[]
   } catch (error) {
     console.error("Error fetching prospects:", error)
     return []
   }
 }
 
-export async function getCounts({ filters }: FilterQueryParams = {}) {
+export async function getCounts({ filters }: FilterQueryParams = {}): Promise<CountsResult> {
   try {
     if (!process.env.DATABASE_URL) {
       console.error("DATABASE_URL environment variable is not set")
@@ -286,76 +368,18 @@ export async function getCounts({ filters }: FilterQueryParams = {}) {
   }
 }
 
-export async function getFilterOptions({ filters }: FilterQueryParams = {}) {
+export async function getFilterOptions({
+  filters,
+}: FilterQueryParams = {}): Promise<FilterOptionsResult> {
   try {
     if (!process.env.DATABASE_URL) {
       console.error("DATABASE_URL environment variable is not set")
-      return {
-        availableOptions: {
-          prospectAccountNames: [],
-          prospectRnxtDataTypes: [],
-          prospectProjectNames: [],
-          prospectDupeStatuses: [],
-          prospectSfTalStatuses: [],
-          prospectSfIndustries: [],
-          prospectContactsTypes: [],
-          prospectDepartments: [],
-          prospectLevels: [],
-          prospectOptizmoSuppressions: [],
-          prospectCities: [],
-          prospectCountries: [],
-        },
-        blankCounts: {
-        prospectAccountNames: 0,
-          prospectRnxtDataTypes: 0,
-          prospectProjectNames: 0,
-          prospectDupeStatuses: 0,
-          prospectSfTalStatuses: 0,
-          prospectSfIndustries: 0,
-          prospectContactsTypes: 0,
-          prospectDepartments: 0,
-          prospectLevels: 0,
-          prospectOptizmoSuppressions: 0,
-          prospectCities: 0,
-          prospectCountries: 0,
-        },
-        error: "Database configuration missing",
-      }
+      return createEmptyFilterOptionsResult("Database configuration missing")
     }
 
     if (!sql) {
       console.error("Database connection not initialized")
-      return {
-        availableOptions: {
-          prospectAccountNames: [],
-          prospectRnxtDataTypes: [],
-          prospectProjectNames: [],
-          prospectDupeStatuses: [],
-          prospectSfTalStatuses: [],
-          prospectSfIndustries: [],
-          prospectContactsTypes: [],
-          prospectDepartments: [],
-          prospectLevels: [],
-          prospectOptizmoSuppressions: [],
-          prospectCities: [],
-          prospectCountries: [],
-        },
-        blankCounts: {
-        prospectAccountNames: 0,
-          prospectRnxtDataTypes: 0,
-          prospectProjectNames: 0,
-          prospectDupeStatuses: 0,
-          prospectSfTalStatuses: 0,
-          prospectSfIndustries: 0,
-          prospectContactsTypes: 0,
-          prospectDepartments: 0,
-          prospectLevels: 0,
-          prospectOptizmoSuppressions: 0,
-          prospectCities: 0,
-          prospectCountries: 0,
-        },
-        error: "Database connection failed",
-      }
+      return createEmptyFilterOptionsResult("Database connection failed")
     }
 
     const normalizedFilters = normalizeFilters(filters)
@@ -433,7 +457,7 @@ export async function getFilterOptions({ filters }: FilterQueryParams = {}) {
     })
 
     const cacheKey = `filter_options:${JSON.stringify(normalizedFilters)}`
-    const cached = getCachedData<any>(cacheKey)
+    const cached = getCachedData<FilterOptionsResult>(cacheKey)
     if (cached) {
       console.log("Returning filter options from cache")
       return cached
@@ -612,126 +636,36 @@ export async function getFilterOptions({ filters }: FilterQueryParams = {}) {
     return allOptions
   } catch (error) {
     console.error("Error fetching filter options:", error)
-    return {
-      availableOptions: {
-        prospectAccountNames: [],
-        prospectRnxtDataTypes: [],
-        prospectProjectNames: [],
-        prospectDupeStatuses: [],
-        prospectSfTalStatuses: [],
-        prospectSfIndustries: [],
-        prospectContactsTypes: [],
-        prospectDepartments: [],
-        prospectLevels: [],
-        prospectOptizmoSuppressions: [],
-        prospectCities: [],
-        prospectCountries: [],
-      },
-      blankCounts: {
-        prospectAccountNames: 0,
-          prospectRnxtDataTypes: 0,
-          prospectProjectNames: 0,
-          prospectDupeStatuses: 0,
-          prospectSfTalStatuses: 0,
-          prospectSfIndustries: 0,
-          prospectContactsTypes: 0,
-          prospectDepartments: 0,
-          prospectLevels: 0,
-          prospectOptizmoSuppressions: 0,
-          prospectCities: 0,
-          prospectCountries: 0,
-        },
-      error: error instanceof Error ? error.message : "Unknown database error",
-    }
+    return createEmptyFilterOptionsResult(
+      error instanceof Error ? error.message : "Unknown database error"
+    )
   }
 }
 
-export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filters }: DataQueryParams = {}) {
+export async function getAllData({
+  page = 1,
+  pageSize = DEFAULT_PAGE_SIZE,
+  filters,
+}: DataQueryParams = {}): Promise<AllDataResult> {
   try {
     console.time("getAllData total")
     console.log("Starting to fetch prospects from database...")
 
     if (!process.env.DATABASE_URL) {
       console.error("DATABASE_URL environment variable is not set")
-      return {
-        prospects: [],
-        filteredCount: 0,
-        totalCount: 0,
-        availableOptions: {
-          prospectAccountNames: [],
-          prospectRnxtDataTypes: [],
-          prospectProjectNames: [],
-          prospectDupeStatuses: [],
-          prospectSfTalStatuses: [],
-          prospectSfIndustries: [],
-          prospectContactsTypes: [],
-          prospectDepartments: [],
-          prospectLevels: [],
-          prospectOptizmoSuppressions: [],
-          prospectCities: [],
-          prospectCountries: [],
-        },
-        blankCounts: {
-        prospectAccountNames: 0,
-          prospectRnxtDataTypes: 0,
-          prospectProjectNames: 0,
-          prospectDupeStatuses: 0,
-          prospectSfTalStatuses: 0,
-          prospectSfIndustries: 0,
-          prospectContactsTypes: 0,
-          prospectDepartments: 0,
-          prospectLevels: 0,
-          prospectOptizmoSuppressions: 0,
-          prospectCities: 0,
-          prospectCountries: 0,
-        },
-        error: "Database configuration missing",
-      }
+      return createEmptyAllDataResult("Database configuration missing")
     }
 
     if (!sql) {
       console.error("Database connection not initialized")
-      return {
-        prospects: [],
-        filteredCount: 0,
-        totalCount: 0,
-        availableOptions: {
-          prospectAccountNames: [],
-          prospectRnxtDataTypes: [],
-          prospectProjectNames: [],
-          prospectDupeStatuses: [],
-          prospectSfTalStatuses: [],
-          prospectSfIndustries: [],
-          prospectContactsTypes: [],
-          prospectDepartments: [],
-          prospectLevels: [],
-          prospectOptizmoSuppressions: [],
-          prospectCities: [],
-          prospectCountries: [],
-        },
-        blankCounts: {
-        prospectAccountNames: 0,
-          prospectRnxtDataTypes: 0,
-          prospectProjectNames: 0,
-          prospectDupeStatuses: 0,
-          prospectSfTalStatuses: 0,
-          prospectSfIndustries: 0,
-          prospectContactsTypes: 0,
-          prospectDepartments: 0,
-          prospectLevels: 0,
-          prospectOptizmoSuppressions: 0,
-          prospectCities: 0,
-          prospectCountries: 0,
-        },
-        error: "Database connection failed",
-      }
+      return createEmptyAllDataResult("Database connection failed")
     }
 
     const safePageSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE)
     const safePage = Math.max(page, 1)
     const normalizedFilters = normalizeFilters(filters)
     const cacheKey = `all_data:${safePage}:${safePageSize}:${JSON.stringify(normalizedFilters)}`
-    const cached = getCachedData(cacheKey)
+    const cached = getCachedData<AllDataResult>(cacheKey)
     if (cached) {
       console.log("Returning all data from cache")
       return cached
@@ -769,40 +703,9 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
     return allData
   } catch (error) {
     console.error("Error fetching all data:", error)
-    return {
-      prospects: [],
-      filteredCount: 0,
-      totalCount: 0,
-      availableOptions: {
-        prospectAccountNames: [],
-        prospectRnxtDataTypes: [],
-        prospectProjectNames: [],
-        prospectDupeStatuses: [],
-        prospectSfTalStatuses: [],
-        prospectSfIndustries: [],
-        prospectContactsTypes: [],
-        prospectDepartments: [],
-        prospectLevels: [],
-        prospectOptizmoSuppressions: [],
-        prospectCities: [],
-        prospectCountries: [],
-      },
-      blankCounts: {
-        prospectAccountNames: 0,
-          prospectRnxtDataTypes: 0,
-          prospectProjectNames: 0,
-          prospectDupeStatuses: 0,
-          prospectSfTalStatuses: 0,
-          prospectSfIndustries: 0,
-          prospectContactsTypes: 0,
-          prospectDepartments: 0,
-          prospectLevels: 0,
-          prospectOptizmoSuppressions: 0,
-          prospectCities: 0,
-          prospectCountries: 0,
-        },
-      error: error instanceof Error ? error.message : "Unknown database error",
-    }
+    return createEmptyAllDataResult(
+      error instanceof Error ? error.message : "Unknown database error"
+    )
   }
 }
 
@@ -810,7 +713,7 @@ export async function getAllData({ page = 1, pageSize = DEFAULT_PAGE_SIZE, filte
 // DATABASE HEALTH & DIAGNOSTICS
 // ============================================
 
-export async function testConnection() {
+export async function testConnection(): Promise<{ success: boolean; message: string }> {
   try {
     if (!process.env.DATABASE_URL) {
       return {
@@ -839,7 +742,7 @@ export async function testConnection() {
   }
 }
 
-export async function getDatabaseStatus() {
+export async function getDatabaseStatus(): Promise<DatabaseStatusResult> {
   try {
     const hasUrl = !!process.env.DATABASE_URL
     const hasConnection = !!sql

@@ -1,12 +1,12 @@
 "use client"
 
-import * as React from "react"
 import { ChevronsUpDown, X, Plus, Minus } from "lucide-react"
-import { cn } from "@/lib/utils"
+import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import type { FilterValue } from "@/lib/types"
 
 interface EnhancedMultiSelectProps {
@@ -17,24 +17,29 @@ interface EnhancedMultiSelectProps {
   className?: string
 }
 
-// Memoized Badge component with include/exclude toggle
-const EnhancedSelectBadge = React.memo(({
-  item,
-  onRemove,
-  onToggleMode
-}: {
+const INCLUDE_MODE: FilterValue["mode"] = "include"
+const EXCLUDE_MODE: FilterValue["mode"] = "exclude"
+
+interface EnhancedSelectBadgeProps {
   item: FilterValue
   onRemove: () => void
   onToggleMode: () => void
-}) => {
-  const isInclude = item.mode === 'include'
+}
+
+// Memoized Badge component with include/exclude toggle
+const EnhancedSelectBadge = React.memo(function EnhancedSelectBadge({
+  item,
+  onRemove,
+  onToggleMode,
+}: EnhancedSelectBadgeProps): JSX.Element {
+  const isInclude = item.mode === INCLUDE_MODE
 
   return (
     <Badge
       variant="secondary"
-      className={cn(
-        "mr-1 mb-1 flex items-center gap-1 pr-1",
-        isInclude
+        className={cn(
+          "mr-1 mb-1 flex items-center gap-1 pr-1",
+          isInclude
           ? "bg-green-500/20 text-green-700 dark:bg-green-500/30 dark:text-green-300 border-green-500/50 hover:bg-green-500/30"
           : "bg-red-500/20 text-red-700 dark:bg-red-500/30 dark:text-red-300 border-red-500/50 hover:bg-red-500/30"
       )}
@@ -75,16 +80,7 @@ const EnhancedSelectBadge = React.memo(({
 })
 EnhancedSelectBadge.displayName = "EnhancedSelectBadge"
 
-// Memoized Command Item
-const EnhancedSelectItem = React.memo(({
-  value,
-  disabled,
-  isSelected,
-  filterValue,
-  onSelect,
-  onSelectInclude,
-  onSelectExclude
-}: {
+interface EnhancedSelectItemProps {
   value: string
   disabled: boolean
   isSelected: boolean
@@ -92,8 +88,19 @@ const EnhancedSelectItem = React.memo(({
   onSelect: () => void
   onSelectInclude: () => void
   onSelectExclude: () => void
-}) => {
-  const isInclude = filterValue?.mode === 'include'
+}
+
+// Memoized Command Item
+const EnhancedSelectItem = React.memo(function EnhancedSelectItem({
+  value,
+  disabled,
+  isSelected,
+  filterValue,
+  onSelect,
+  onSelectInclude,
+  onSelectExclude,
+}: EnhancedSelectItemProps): JSX.Element {
+  const isInclude = filterValue?.mode === INCLUDE_MODE
 
   return (
     <CommandItem
@@ -103,9 +110,10 @@ const EnhancedSelectItem = React.memo(({
       className={cn(
         "cursor-pointer",
         disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-accent/50",
-        isSelected && (isInclude
-          ? "bg-green-500/10 hover:bg-green-500/20"
-          : "bg-red-500/10 hover:bg-red-500/20")
+        isSelected &&
+          (isInclude
+            ? "bg-green-500/10 hover:bg-green-500/20"
+            : "bg-red-500/10 hover:bg-red-500/20")
       )}
     >
       <div className="flex items-center justify-between flex-1">
@@ -148,7 +156,7 @@ export const EnhancedMultiSelect = React.memo(function EnhancedMultiSelect({
   onChange,
   placeholder = "Select items...",
   className,
-}: EnhancedMultiSelectProps) {
+}: EnhancedMultiSelectProps): JSX.Element {
   const [open, setOpen] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState("")
 
@@ -160,15 +168,15 @@ export const EnhancedMultiSelect = React.memo(function EnhancedMultiSelect({
     onChange(
       selected.map((i) =>
         i.value === item.value
-          ? { ...i, mode: i.mode === 'include' ? 'exclude' : 'include' }
+          ? { ...i, mode: i.mode === INCLUDE_MODE ? EXCLUDE_MODE : INCLUDE_MODE }
           : i
       )
     )
   }, [selected, onChange])
 
-  const handleSelect = React.useCallback((value: string, mode?: 'include' | 'exclude') => {
-    const option = options.find((opt) => (typeof opt === "string" ? opt === value : opt.value === value))
-    if (typeof option === "object" && option.disabled) return
+  const handleSelect = React.useCallback((value: string, mode?: FilterValue["mode"]) => {
+    const option = options.find((opt) => opt.value === value)
+    if (option?.disabled) return
 
     const existingIndex = selected.findIndex((i) => i.value === value)
 
@@ -186,14 +194,14 @@ export const EnhancedMultiSelect = React.memo(function EnhancedMultiSelect({
         onChange(
           selected.map((i, idx) =>
             idx === existingIndex
-              ? { ...i, mode: currentMode === 'include' ? 'exclude' : 'include' }
+              ? { ...i, mode: currentMode === INCLUDE_MODE ? EXCLUDE_MODE : INCLUDE_MODE }
               : i
           )
         )
       }
     } else {
       // Add with specified mode or default to include
-      onChange([...selected, { value, mode: mode || 'include' }])
+      onChange([...selected, { value, mode: mode ?? INCLUDE_MODE }])
     }
   }, [options, selected, onChange])
 
@@ -212,35 +220,33 @@ export const EnhancedMultiSelect = React.memo(function EnhancedMultiSelect({
     const normalizedSearch = searchValue.trim().toLowerCase()
     const filteredOptions = normalizedSearch
       ? options.filter((option) => {
-          const value = typeof option === "string" ? option : option.value
-          return value.toLowerCase().includes(normalizedSearch)
+          return option.value.toLowerCase().includes(normalizedSearch)
         })
       : options.slice(0, 20)
 
     return filteredOptions.map((option) => {
-      const value = typeof option === "string" ? option : option.value
-      const disabled = typeof option === "object" ? (option.disabled ?? false) : false
-      const filterValue = selected.find((s) => s.value === value)
+      const disabled = option.disabled ?? false
+      const filterValue = selected.find((s) => s.value === option.value)
       const isSelected = !!filterValue
 
       return (
         <EnhancedSelectItem
-          key={value}
-          value={value}
+          key={option.value}
+          value={option.value}
           disabled={disabled}
           isSelected={isSelected}
           filterValue={filterValue}
-          onSelect={() => handleSelect(value)}
-          onSelectInclude={() => handleSelect(value, 'include')}
-          onSelectExclude={() => handleSelect(value, 'exclude')}
+          onSelect={() => handleSelect(option.value)}
+          onSelectInclude={() => handleSelect(option.value, INCLUDE_MODE)}
+          onSelectExclude={() => handleSelect(option.value, EXCLUDE_MODE)}
         />
       )
     })
   }, [options, selected, handleSelect, searchValue])
 
   // Count include vs exclude
-  const includeCount = selected.filter(s => s.mode === 'include').length
-  const excludeCount = selected.filter(s => s.mode === 'exclude').length
+  const includeCount = selected.filter((s) => s.mode === INCLUDE_MODE).length
+  const excludeCount = selected.filter((s) => s.mode === EXCLUDE_MODE).length
 
   React.useEffect(() => {
     if (!open && searchValue) {

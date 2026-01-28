@@ -46,7 +46,7 @@ interface SavedFilter {
 
 type FilterValueLike = FilterValue | string | null | undefined
 
-const calculateActiveFilters = (filters: Filters) => {
+const calculateActiveFilters = (filters: Filters): number => {
   return (
     filters.prospectAccountNames.length +
     filters.prospectRnxtDataTypes.length +
@@ -76,35 +76,33 @@ const calculateActiveFilters = (filters: Filters) => {
   )
 }
 
-const withFilterDefaults = (filters: Partial<Filters> | null | undefined): Filters => {
-  return {
-    prospectAccountNames: filters?.prospectAccountNames ?? [],
-    prospectRnxtDataTypes: filters?.prospectRnxtDataTypes ?? [],
-    prospectProjectNames: filters?.prospectProjectNames ?? [],
-    prospectDupeStatuses: filters?.prospectDupeStatuses ?? [],
-    prospectSfTalStatuses: filters?.prospectSfTalStatuses ?? [],
-    prospectSfIndustries: filters?.prospectSfIndustries ?? [],
-    prospectContactsTypes: filters?.prospectContactsTypes ?? [],
-    prospectDepartments: filters?.prospectDepartments ?? [],
-    prospectLevels: filters?.prospectLevels ?? [],
-    prospectOptizmoSuppressions: filters?.prospectOptizmoSuppressions ?? [],
-    prospectCities: filters?.prospectCities ?? [],
-    prospectCountries: filters?.prospectCountries ?? [],
-    prospectTitleKeywords: filters?.prospectTitleKeywords ?? [],
-    includeBlankAccountNames: filters?.includeBlankAccountNames ?? false,
-    includeBlankRnxtDataTypes: filters?.includeBlankRnxtDataTypes ?? false,
-    includeBlankProjectNames: filters?.includeBlankProjectNames ?? false,
-    includeBlankDupeStatuses: filters?.includeBlankDupeStatuses ?? false,
-    includeBlankSfTalStatuses: filters?.includeBlankSfTalStatuses ?? false,
-    includeBlankSfIndustries: filters?.includeBlankSfIndustries ?? false,
-    includeBlankContactsTypes: filters?.includeBlankContactsTypes ?? false,
-    includeBlankDepartments: filters?.includeBlankDepartments ?? false,
-    includeBlankLevels: filters?.includeBlankLevels ?? false,
-    includeBlankOptizmoSuppressions: filters?.includeBlankOptizmoSuppressions ?? false,
-    includeBlankCities: filters?.includeBlankCities ?? false,
-    includeBlankCountries: filters?.includeBlankCountries ?? false,
-  }
-}
+const withFilterDefaults = (filters: Partial<Filters> | null | undefined): Filters => ({
+  prospectAccountNames: filters?.prospectAccountNames ?? [],
+  prospectRnxtDataTypes: filters?.prospectRnxtDataTypes ?? [],
+  prospectProjectNames: filters?.prospectProjectNames ?? [],
+  prospectDupeStatuses: filters?.prospectDupeStatuses ?? [],
+  prospectSfTalStatuses: filters?.prospectSfTalStatuses ?? [],
+  prospectSfIndustries: filters?.prospectSfIndustries ?? [],
+  prospectContactsTypes: filters?.prospectContactsTypes ?? [],
+  prospectDepartments: filters?.prospectDepartments ?? [],
+  prospectLevels: filters?.prospectLevels ?? [],
+  prospectOptizmoSuppressions: filters?.prospectOptizmoSuppressions ?? [],
+  prospectCities: filters?.prospectCities ?? [],
+  prospectCountries: filters?.prospectCountries ?? [],
+  prospectTitleKeywords: filters?.prospectTitleKeywords ?? [],
+  includeBlankAccountNames: filters?.includeBlankAccountNames ?? false,
+  includeBlankRnxtDataTypes: filters?.includeBlankRnxtDataTypes ?? false,
+  includeBlankProjectNames: filters?.includeBlankProjectNames ?? false,
+  includeBlankDupeStatuses: filters?.includeBlankDupeStatuses ?? false,
+  includeBlankSfTalStatuses: filters?.includeBlankSfTalStatuses ?? false,
+  includeBlankSfIndustries: filters?.includeBlankSfIndustries ?? false,
+  includeBlankContactsTypes: filters?.includeBlankContactsTypes ?? false,
+  includeBlankDepartments: filters?.includeBlankDepartments ?? false,
+  includeBlankLevels: filters?.includeBlankLevels ?? false,
+  includeBlankOptizmoSuppressions: filters?.includeBlankOptizmoSuppressions ?? false,
+  includeBlankCities: filters?.includeBlankCities ?? false,
+  includeBlankCountries: filters?.includeBlankCountries ?? false,
+})
 
 interface SavedFiltersManagerProps {
   currentFilters: Filters
@@ -115,26 +113,43 @@ interface SavedFiltersManagerProps {
   exportState?: { isExporting: boolean; progress: { current: number; total: number } | null }
 }
 
+type NormalizedFilterValue = {
+  label: string
+  mode: FilterValue["mode"]
+}
+
 // Safely extract label/mode from saved filter values (handles legacy string arrays too)
-const normalizeFilterValue = (value: FilterValueLike) => {
+const normalizeFilterValue = (value: FilterValueLike): NormalizedFilterValue | null => {
   if (!value) return null
   if (typeof value === "string") return { label: value, mode: "include" as FilterValue["mode"] }
   if (typeof value === "object" && "value" in value) return { label: value.value, mode: value.mode }
   return { label: String(value), mode: "include" as FilterValue["mode"] }
 }
 
-// Memoized FilterBadge component to prevent re-renders
-const FilterBadge = memo((
-  { filterKey, value, mode }: { filterKey: string; value: string; mode?: FilterValue["mode"] }
-) => (
-  <Badge variant={mode === "exclude" ? "destructive" : "outline"} className="text-xs">
-    {filterKey}: {value}
-    {mode === "exclude" ? " (excluded)" : ""}
-  </Badge>
-))
+interface FilterBadgeProps {
+  filterKey: string
+  value: string
+  mode?: FilterValue["mode"]
+}
+
+const FilterBadge = memo(function FilterBadge({
+  filterKey,
+  value,
+  mode,
+}: FilterBadgeProps): JSX.Element {
+  return (
+    <Badge variant={mode === "exclude" ? "destructive" : "outline"} className="text-xs">
+      {filterKey}: {value}
+      {mode === "exclude" ? " (excluded)" : ""}
+    </Badge>
+  )
+})
 FilterBadge.displayName = "FilterBadge"
 
-const renderFilterValues = (values: FilterValueLike[] = [], label: string) =>
+const renderFilterValues = (
+  values: FilterValueLike[] = [],
+  label: string
+): Array<JSX.Element | null> =>
   values.map((item, index) => {
     const normalized = normalizeFilterValue(item)
     if (!normalized) return null
@@ -149,37 +164,34 @@ const renderFilterValues = (values: FilterValueLike[] = [], label: string) =>
     )
   })
 
-const renderBlankBadge = (enabled: boolean, label: string) =>
-  enabled ? <FilterBadge filterKey={label} value="(blanks)" /> : null
+const renderBlankBadge = (enabled: boolean, label: string): JSX.Element | null => {
+  if (!enabled) return null
+  return <FilterBadge filterKey={label} value="(blanks)" />
+}
 
-// Memoized SavedFilterCard component to prevent re-renders
-const SavedFilterCard = memo(({
-  filter,
-  onLoad,
-  onEdit,
-  onDelete
-}: {
+interface SavedFilterCardProps {
   filter: SavedFilter
   onLoad: (filter: SavedFilter) => void
   onEdit: (filter: SavedFilter) => void
   onDelete: (filter: SavedFilter) => void
-}) => {
-  // Memoize filter count calculation
-  const filterCount = useCallback(() => {
-    return calculateActiveFilters(filter.filters)
-  }, [filter.filters])
+}
+
+const SavedFilterCard = memo(function SavedFilterCard({
+  filter,
+  onLoad,
+  onEdit,
+  onDelete,
+}: SavedFilterCardProps): JSX.Element {
+  const filterCount = calculateActiveFilters(filter.filters)
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">{filter.name}</CardTitle>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{filterCount()} filters</Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEdit(filter)}
-            >
+            <Badge variant="secondary">{filterCount} filters</Badge>
+            <Button variant="ghost" size="sm" onClick={() => onEdit(filter)}>
               <Edit className="h-4 w-4" />
             </Button>
             <Button
@@ -255,8 +267,8 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
   totalActiveFilters,
   onReset,
   onExport,
-  exportState
-}: SavedFiltersManagerProps) {
+  exportState,
+}: SavedFiltersManagerProps): JSX.Element {
   const supabase = getSupabaseBrowserClient()
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([])
   const [loading, setLoading] = useState(false)
@@ -336,7 +348,6 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
     loadSavedFilters()
   }, [authReady, loadSavedFilters, userId])
 
-  // Memoize handleSaveFilter
   const handleSaveFilter = useCallback(async () => {
     if (!filterName.trim() || !userId) return
 
@@ -358,18 +369,15 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
     }
   }, [currentFilters, filterName, loadSavedFilters, supabase, userId])
 
-  // Memoize handleLoadFilter
   const handleLoadFilter = useCallback((savedFilter: SavedFilter) => {
     onLoadFilters(savedFilter.filters)
   }, [onLoadFilters])
 
-  // Memoize handleDeleteFilter
   const handleDeleteFilter = useCallback((filter: SavedFilter) => {
     setFilterToDelete(filter)
     setDeleteConfirmOpen(true)
   }, [])
 
-  // Memoize confirmDeleteFilter
   const confirmDeleteFilter = useCallback(async () => {
     if (!filterToDelete) return
 
@@ -392,7 +400,6 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
     }
   }, [filterToDelete, loadSavedFilters, supabase])
 
-  // Memoize handleUpdateFilter
   const handleUpdateFilter = useCallback(async () => {
     if (!editingFilter || !editName.trim()) return
 
@@ -419,16 +426,18 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
     }
   }, [editingFilter, editName, loadSavedFilters, supabase])
 
-  // Memoize getFilterSummary
-  const getFilterSummary = useCallback((filters: Filters) => {
-    return calculateActiveFilters(filters)
-  }, [])
-
-  // Memoize edit handler
   const handleEdit = useCallback((filter: SavedFilter) => {
     setEditingFilter(filter)
     setEditName(filter.name)
   }, [])
+
+  const exportLabel = (() => {
+    if (!exportState?.isExporting) return "Export"
+    if (exportState.progress?.total) {
+      return `Exporting ${exportState.progress.current}/${exportState.progress.total}`
+    }
+    return "Exporting..."
+  })()
 
   return (
     <div className="flex flex-col gap-3 w-full bg-sidebar-accent/5 p-3 rounded-lg border border-sidebar-border/50">
@@ -466,7 +475,7 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
                   >
                     <span className="font-medium text-sm truncate max-w-[180px]">{filter.name}</span>
                     <Badge variant="secondary" className="text-[10px] h-5 px-1.5 ml-2 shrink-0 bg-muted/50">
-                      {getFilterSummary(filter.filters)}
+                      {calculateActiveFilters(filter.filters)}
                     </Badge>
                   </button>
                   <Button
@@ -567,11 +576,7 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
               disabled={exportState?.isExporting}
               className="w-full h-8 text-xs font-medium shadow-none hover:shadow-sm"
             >
-              {exportState?.isExporting
-                ? exportState.progress?.total
-                  ? `Exporting ${exportState.progress.current}/${exportState.progress.total}`
-                  : "Exporting..."
-                : "Export"}
+              {exportLabel}
             </Button>
           )}
         </div>

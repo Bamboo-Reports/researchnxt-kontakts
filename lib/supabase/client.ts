@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 let supabaseClient: SupabaseClient | null = null
 let supabaseStorage: "local" | "session" | null = null
 
-function resolveStoragePreference() {
+function resolveStoragePreference(): "local" | "session" {
   if (typeof window === "undefined") {
     return "local"
   }
@@ -21,7 +21,7 @@ function resolveStoragePreference() {
   return "local"
 }
 
-export function setSupabaseAuthStoragePreference(storage: "local" | "session") {
+export function setSupabaseAuthStoragePreference(storage: "local" | "session"): void {
   if (typeof window === "undefined") {
     return
   }
@@ -40,7 +40,9 @@ export function setSupabaseAuthStoragePreference(storage: "local" | "session") {
   }
 }
 
-export function getSupabaseBrowserClient(storagePreference?: "local" | "session") {
+export function getSupabaseBrowserClient(
+  storagePreference?: "local" | "session"
+): SupabaseClient {
   const resolvedStorage = storagePreference ?? resolveStoragePreference()
 
   if (supabaseClient && supabaseStorage === resolvedStorage) {
