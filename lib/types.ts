@@ -109,3 +109,13 @@ export interface ChartData {
   name: string
   value: number
 }
+
+export interface DatabaseStatus {
+  hasUrl: boolean
+  hasConnection: boolean
+  urlLength: number
+  environment: string
+  cacheSize: number
+  cacheKeys: string[]
+  error?: string
+}

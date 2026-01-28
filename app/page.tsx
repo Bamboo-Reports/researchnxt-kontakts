@@ -2,18 +2,113 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Header } from "@/components/layout/header"
-import { FiltersSidebar } from "@/components/filters/filters-sidebar"
-import { SummaryCards } from "@/components/dashboard/summary-cards"
-import { ProspectsTab } from "@/components/tabs/prospects-tab"
-import { LoadingState } from "@/components/states/loading-state"
 import { ErrorState } from "@/components/states/error-state"
-import { getProspects, getCounts, getFilterOptions, testConnection, getDatabaseStatus, clearCache } from "./actions"
+import { FiltersSidebar } from "@/components/filters/filters-sidebar"
+import { Header } from "@/components/layout/header"
+import { LoadingState } from "@/components/states/loading-state"
+import { ProspectsTab } from "@/components/tabs/prospects-tab"
+import { SummaryCards } from "@/components/dashboard/summary-cards"
+import type { AvailableOptions, BlankCounts, DatabaseStatus, Filters, Prospect } from "@/lib/types"
 import { exportToExcel } from "@/lib/utils/export-helpers"
-import type { Prospect, Filters, AvailableOptions, BlankCounts } from "@/lib/types"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import {
+  clearCache,
+  getCounts,
+  getDatabaseStatus,
+  getFilterOptions,
+  getProspects,
+  testConnection,
+} from "./actions"
 
-function DashboardContent() {
+const createEmptyAvailableOptions = (): AvailableOptions => ({
+  prospectAccountNames: [],
+  prospectRnxtDataTypes: [],
+  prospectProjectNames: [],
+  prospectDupeStatuses: [],
+  prospectSfTalStatuses: [],
+  prospectSfIndustries: [],
+  prospectContactsTypes: [],
+  prospectDepartments: [],
+  prospectLevels: [],
+  prospectOptizmoSuppressions: [],
+  prospectCities: [],
+  prospectCountries: [],
+})
+
+const createEmptyBlankCounts = (): BlankCounts => ({
+  prospectAccountNames: 0,
+  prospectRnxtDataTypes: 0,
+  prospectProjectNames: 0,
+  prospectDupeStatuses: 0,
+  prospectSfTalStatuses: 0,
+  prospectSfIndustries: 0,
+  prospectContactsTypes: 0,
+  prospectDepartments: 0,
+  prospectLevels: 0,
+  prospectOptizmoSuppressions: 0,
+  prospectCities: 0,
+  prospectCountries: 0,
+})
+
+const createEmptyFilters = (): Filters => ({
+  prospectAccountNames: [],
+  prospectRnxtDataTypes: [],
+  prospectProjectNames: [],
+  prospectDupeStatuses: [],
+  prospectSfTalStatuses: [],
+  prospectSfIndustries: [],
+  prospectContactsTypes: [],
+  prospectDepartments: [],
+  prospectLevels: [],
+  prospectOptizmoSuppressions: [],
+  prospectCities: [],
+  prospectCountries: [],
+  prospectTitleKeywords: [],
+  includeBlankAccountNames: false,
+  includeBlankRnxtDataTypes: false,
+  includeBlankProjectNames: false,
+  includeBlankDupeStatuses: false,
+  includeBlankSfTalStatuses: false,
+  includeBlankSfIndustries: false,
+  includeBlankContactsTypes: false,
+  includeBlankDepartments: false,
+  includeBlankLevels: false,
+  includeBlankOptizmoSuppressions: false,
+  includeBlankCities: false,
+  includeBlankCountries: false,
+})
+
+const countActiveFilters = (filters: Filters): number => {
+  return (
+    filters.prospectAccountNames.length +
+    filters.prospectRnxtDataTypes.length +
+    filters.prospectProjectNames.length +
+    filters.prospectDupeStatuses.length +
+    filters.prospectSfTalStatuses.length +
+    filters.prospectSfIndustries.length +
+    filters.prospectContactsTypes.length +
+    filters.prospectDepartments.length +
+    filters.prospectLevels.length +
+    filters.prospectOptizmoSuppressions.length +
+    filters.prospectCities.length +
+    filters.prospectCountries.length +
+    filters.prospectTitleKeywords.length +
+    (filters.includeBlankAccountNames ? 1 : 0) +
+    (filters.includeBlankRnxtDataTypes ? 1 : 0) +
+    (filters.includeBlankProjectNames ? 1 : 0) +
+    (filters.includeBlankDupeStatuses ? 1 : 0) +
+    (filters.includeBlankSfTalStatuses ? 1 : 0) +
+    (filters.includeBlankSfIndustries ? 1 : 0) +
+    (filters.includeBlankContactsTypes ? 1 : 0) +
+    (filters.includeBlankDepartments ? 1 : 0) +
+    (filters.includeBlankLevels ? 1 : 0) +
+    (filters.includeBlankOptizmoSuppressions ? 1 : 0) +
+    (filters.includeBlankCities ? 1 : 0) +
+    (filters.includeBlankCountries ? 1 : 0)
+  )
+}
+
+function DashboardContent(): JSX.Element | null {
   const router = useRouter()
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [pageLoading, setPageLoading] = useState(true)
@@ -21,96 +116,18 @@ function DashboardContent() {
   const [optionsLoading, setOptionsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<string>("")
-  const [dbStatus, setDbStatus] = useState<any>(null)
+  const [dbStatus, setDbStatus] = useState<DatabaseStatus | null>(null)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [connectionChecked, setConnectionChecked] = useState(false)
   const connectionCheckRef = useRef<Promise<boolean> | null>(null)
-  const [availableOptions, setAvailableOptions] = useState<AvailableOptions>({
-    prospectAccountNames: [],
-    prospectRnxtDataTypes: [],
-    prospectProjectNames: [],
-    prospectDupeStatuses: [],
-    prospectSfTalStatuses: [],
-    prospectSfIndustries: [],
-    prospectContactsTypes: [],
-    prospectDepartments: [],
-    prospectLevels: [],
-    prospectOptizmoSuppressions: [],
-    prospectCities: [],
-    prospectCountries: [],
-  })
-  const [blankCounts, setBlankCounts] = useState<BlankCounts>({
-    prospectAccountNames: 0,
-    prospectRnxtDataTypes: 0,
-    prospectProjectNames: 0,
-    prospectDupeStatuses: 0,
-    prospectSfTalStatuses: 0,
-    prospectSfIndustries: 0,
-    prospectContactsTypes: 0,
-    prospectDepartments: 0,
-    prospectLevels: 0,
-    prospectOptizmoSuppressions: 0,
-    prospectCities: 0,
-    prospectCountries: 0,
-  })
+  const [availableOptions, setAvailableOptions] = useState<AvailableOptions>(createEmptyAvailableOptions)
+  const [blankCounts, setBlankCounts] = useState<BlankCounts>(createEmptyBlankCounts)
   const [filteredCount, setFilteredCount] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
-  const [filters, setFilters] = useState<Filters>({
-    prospectAccountNames: [],
-    prospectRnxtDataTypes: [],
-    prospectProjectNames: [],
-    prospectDupeStatuses: [],
-    prospectSfTalStatuses: [],
-    prospectSfIndustries: [],
-    prospectContactsTypes: [],
-    prospectDepartments: [],
-    prospectLevels: [],
-    prospectOptizmoSuppressions: [],
-    prospectCities: [],
-    prospectCountries: [],
-    prospectTitleKeywords: [],
-    includeBlankAccountNames: false,
-    includeBlankRnxtDataTypes: false,
-    includeBlankProjectNames: false,
-    includeBlankDupeStatuses: false,
-    includeBlankSfTalStatuses: false,
-    includeBlankSfIndustries: false,
-    includeBlankContactsTypes: false,
-    includeBlankDepartments: false,
-    includeBlankLevels: false,
-    includeBlankOptizmoSuppressions: false,
-    includeBlankCities: false,
-    includeBlankCountries: false,
-  })
-  const [pendingFilters, setPendingFilters] = useState<Filters>({
-    prospectAccountNames: [],
-    prospectRnxtDataTypes: [],
-    prospectProjectNames: [],
-    prospectDupeStatuses: [],
-    prospectSfTalStatuses: [],
-    prospectSfIndustries: [],
-    prospectContactsTypes: [],
-    prospectDepartments: [],
-    prospectLevels: [],
-    prospectOptizmoSuppressions: [],
-    prospectCities: [],
-    prospectCountries: [],
-    prospectTitleKeywords: [],
-    includeBlankAccountNames: false,
-    includeBlankRnxtDataTypes: false,
-    includeBlankProjectNames: false,
-    includeBlankDupeStatuses: false,
-    includeBlankSfTalStatuses: false,
-    includeBlankSfIndustries: false,
-    includeBlankContactsTypes: false,
-    includeBlankDepartments: false,
-    includeBlankLevels: false,
-    includeBlankOptizmoSuppressions: false,
-    includeBlankCities: false,
-    includeBlankCountries: false,
-  })
+  const [filters, setFilters] = useState<Filters>(createEmptyFilters)
+  const [pendingFilters, setPendingFilters] = useState<Filters>(createEmptyFilters)
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(50)
+  const itemsPerPage = 50
   const [authReady, setAuthReady] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -267,38 +284,8 @@ function DashboardContent() {
         return
       }
 
-      setAvailableOptions(
-        options.availableOptions || {
-          prospectAccountNames: [],
-          prospectRnxtDataTypes: [],
-          prospectProjectNames: [],
-          prospectDupeStatuses: [],
-          prospectSfTalStatuses: [],
-          prospectSfIndustries: [],
-          prospectContactsTypes: [],
-          prospectDepartments: [],
-          prospectLevels: [],
-          prospectOptizmoSuppressions: [],
-          prospectCities: [],
-          prospectCountries: [],
-        }
-      )
-      setBlankCounts(
-        options.blankCounts || {
-          prospectAccountNames: 0,
-          prospectRnxtDataTypes: 0,
-          prospectProjectNames: 0,
-          prospectDupeStatuses: 0,
-          prospectSfTalStatuses: 0,
-          prospectSfIndustries: 0,
-          prospectContactsTypes: 0,
-          prospectDepartments: 0,
-          prospectLevels: 0,
-          prospectOptizmoSuppressions: 0,
-          prospectCities: 0,
-          prospectCountries: 0,
-        }
-      )
+      setAvailableOptions(options.availableOptions ?? createEmptyAvailableOptions())
+      setBlankCounts(options.blankCounts ?? createEmptyBlankCounts())
     } catch (err) {
       console.error("Error loading filter options:", err)
       const errorMessage = err instanceof Error ? err.message : "Failed to load data from database"
@@ -404,35 +391,7 @@ function DashboardContent() {
     ])
   }, [filters, loadFilterOptions, loadCounts, loadPageData])
 
-  const getTotalActiveFilters = () => {
-    return (
-      pendingFilters.prospectAccountNames.length +
-      pendingFilters.prospectRnxtDataTypes.length +
-      pendingFilters.prospectProjectNames.length +
-      pendingFilters.prospectDupeStatuses.length +
-      pendingFilters.prospectSfTalStatuses.length +
-      pendingFilters.prospectSfIndustries.length +
-      pendingFilters.prospectContactsTypes.length +
-      pendingFilters.prospectDepartments.length +
-      pendingFilters.prospectLevels.length +
-      pendingFilters.prospectOptizmoSuppressions.length +
-      pendingFilters.prospectCities.length +
-      pendingFilters.prospectCountries.length +
-      pendingFilters.prospectTitleKeywords.length +
-      (pendingFilters.includeBlankAccountNames ? 1 : 0) +
-      (pendingFilters.includeBlankRnxtDataTypes ? 1 : 0) +
-      (pendingFilters.includeBlankProjectNames ? 1 : 0) +
-      (pendingFilters.includeBlankDupeStatuses ? 1 : 0) +
-      (pendingFilters.includeBlankSfTalStatuses ? 1 : 0) +
-      (pendingFilters.includeBlankSfIndustries ? 1 : 0) +
-      (pendingFilters.includeBlankContactsTypes ? 1 : 0) +
-      (pendingFilters.includeBlankDepartments ? 1 : 0) +
-      (pendingFilters.includeBlankLevels ? 1 : 0) +
-      (pendingFilters.includeBlankOptizmoSuppressions ? 1 : 0) +
-      (pendingFilters.includeBlankCities ? 1 : 0) +
-      (pendingFilters.includeBlankCountries ? 1 : 0)
-    )
-  }
+  const getTotalActiveFilters = () => countActiveFilters(pendingFilters)
 
   const handleLoadSavedFilters = (savedFilters: Filters) => {
     setPendingFilters(savedFilters)
@@ -478,33 +437,7 @@ function DashboardContent() {
   }
 
   const handleResetFilters = () => {
-    const emptyFilters = {
-      prospectAccountNames: [],
-      prospectRnxtDataTypes: [],
-      prospectProjectNames: [],
-      prospectDupeStatuses: [],
-      prospectSfTalStatuses: [],
-      prospectSfIndustries: [],
-      prospectContactsTypes: [],
-      prospectDepartments: [],
-      prospectLevels: [],
-      prospectOptizmoSuppressions: [],
-      prospectCities: [],
-      prospectCountries: [],
-      prospectTitleKeywords: [],
-      includeBlankAccountNames: false,
-      includeBlankRnxtDataTypes: false,
-      includeBlankProjectNames: false,
-      includeBlankDupeStatuses: false,
-      includeBlankSfTalStatuses: false,
-      includeBlankSfIndustries: false,
-      includeBlankContactsTypes: false,
-      includeBlankDepartments: false,
-      includeBlankLevels: false,
-      includeBlankOptizmoSuppressions: false,
-      includeBlankCities: false,
-      includeBlankCountries: false,
-    }
+    const emptyFilters = createEmptyFilters()
     setPendingFilters(emptyFilters)
     setFilters(emptyFilters)
   }
@@ -520,7 +453,14 @@ function DashboardContent() {
   }
 
   if (error) {
-    return <ErrorState error={error} dbStatus={dbStatus} onRetry={handleRetry} onClearCache={handleClearCache} />
+    return (
+      <ErrorState
+        error={error}
+        dbStatus={dbStatus}
+        onRetry={handleRetry}
+        onClearCache={handleClearCache}
+      />
+    )
   }
 
   return (

@@ -1,4 +1,5 @@
-import { FileQuestion, Filter, Search, DatabaseZap } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import { DatabaseZap, FileQuestion, Filter, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface EmptyStateProps {
@@ -11,13 +12,20 @@ interface EmptyStateProps {
   }
 }
 
+type EmptyStateConfig = {
+  icon: LucideIcon
+  defaultTitle: string
+  defaultDescription: string
+  iconColor: string
+}
+
 export function EmptyState({
   type = "no-results",
   title,
   description,
-  action
-}: EmptyStateProps) {
-  const config = {
+  action,
+}: EmptyStateProps): JSX.Element {
+  const config: Record<NonNullable<EmptyStateProps["type"]>, EmptyStateConfig> = {
     "no-data": {
       icon: DatabaseZap,
       defaultTitle: "No Data Available",

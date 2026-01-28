@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getSupabaseBrowserClient, setSupabaseAuthStoragePreference } from "@/lib/supabase/client"
 import { signInSchema, type SignInValues } from "@/lib/validators/auth"
 
-function SignInForm() {
+function SignInForm(): JSX.Element {
   const router = useRouter()
   const [submitError, setSubmitError] = useState<string | null>(null)
   const {
@@ -158,7 +158,7 @@ function SignInForm() {
   )
 }
 
-export default function SignInPage() {
+export default function SignInPage(): JSX.Element {
   return (
     <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <SignInForm />

@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import React, { useEffect, useState } from "react"
 import { RefreshCw, UserRound } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,15 +14,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import type { Profile } from "@/lib/types"
-import { useRouter } from "next/navigation"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 
 interface HeaderProps {
   onRefresh: () => void
 }
 
-export const Header = React.memo(function Header({ onRefresh }: HeaderProps) {
+export const Header = React.memo(function Header({ onRefresh }: HeaderProps): JSX.Element {
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)

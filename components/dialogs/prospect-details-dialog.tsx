@@ -1,6 +1,5 @@
 "use client"
 
-import React from "react"
 import {
   Dialog,
   DialogContent,
@@ -8,30 +7,40 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  Mail,
-  Linkedin,
-  MapPin,
-  Briefcase,
-  Users,
-  Award,
-  Building2,
-  FileText,
-  BadgeCheck,
-  Link,
-  Calendar,
   AlertTriangle,
+  ArrowUpRight,
+  Award,
+  BadgeCheck,
+  Briefcase,
+  Building2,
+  Calendar,
   Database,
   Factory,
-  ShieldAlert,
-  ArrowUpRight,
+  FileText,
+  Linkedin,
+  Link,
+  Mail,
+  MapPin,
   Phone,
+  ShieldAlert,
+  Users,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import type { Prospect } from "@/lib/types"
 
 interface ProspectDetailsDialogProps {
   prospect: Prospect | null
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+type InfoRowProps = {
+  icon: LucideIcon
+  label: string
+  value?: string | null
+  link?: string
+  linkIcon?: LucideIcon
+  displayValue?: string
 }
 
 const InfoRow = ({
@@ -41,15 +50,42 @@ const InfoRow = ({
   link,
   linkIcon,
   displayValue,
-}: {
-  icon: any
-  label: string
-  value?: string | null
-  link?: string
-  linkIcon?: any
-  displayValue?: string
-}) => {
+}: InfoRowProps): JSX.Element | null => {
   if (!value) return null
+
+  let content: JSX.Element
+  if (link) {
+    if (linkIcon) {
+      const LinkIcon = linkIcon
+      content = (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={label}
+          className="inline-flex items-center justify-between gap-2 text-sm font-medium text-primary hover:underline break-words"
+        >
+          <span>{displayValue ?? value}</span>
+          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-border/60 text-primary hover:bg-accent shrink-0">
+            <LinkIcon className="h-4 w-4" />
+          </span>
+        </a>
+      )
+    } else {
+      content = (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-medium text-primary hover:underline break-words"
+        >
+          {value}
+        </a>
+      )
+    }
+  } else {
+    content = <p className="text-sm font-medium break-words">{value}</p>
+  }
 
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg bg-background/40 backdrop-blur-sm border border-border/50 hover:border-border dark:bg-white/5 dark:border-white/10 dark:backdrop-blur-md dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
@@ -58,33 +94,7 @@ const InfoRow = ({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
-        {link ? (
-          linkIcon ? (
-            <a
-              href={link}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={label}
-              className="inline-flex items-center justify-between gap-2 text-sm font-medium text-primary hover:underline break-words"
-            >
-              <span>{displayValue ?? value}</span>
-              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-border/60 text-primary hover:bg-accent shrink-0">
-                <linkIcon className="h-4 w-4" />
-              </span>
-            </a>
-          ) : (
-            <a
-              href={link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-primary hover:underline break-words"
-            >
-              {value}
-            </a>
-          )
-        ) : (
-          <p className="text-sm font-medium break-words">{value}</p>
-        )}
+        {content}
       </div>
     </div>
   )
@@ -94,7 +104,7 @@ export function ProspectDetailsDialog({
   prospect,
   open,
   onOpenChange,
-}: ProspectDetailsDialogProps) {
+}: ProspectDetailsDialogProps): JSX.Element | null {
   if (!prospect) return null
 
   return (
@@ -192,17 +202,19 @@ export function ProspectDetailsDialog({
   )
 }
 
+type SectionRow = {
+  icon: LucideIcon
+  label: string
+  value?: string | null
+  link?: string
+  linkIcon?: LucideIcon
+  displayValue?: string
+}
+
 function renderSection(
   title: string,
-  rows: Array<{
-    icon: any
-    label: string
-    value?: string | null
-    link?: string
-    linkIcon?: any
-    displayValue?: string
-  }>
-) {
+  rows: SectionRow[]
+): JSX.Element | null {
   const visibleRows = rows.filter((row) => Boolean(row.value))
   if (visibleRows.length === 0) return null
 

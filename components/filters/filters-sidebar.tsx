@@ -1,14 +1,14 @@
 "use client"
 
-import React, { useState } from "react"
-import { cn } from "@/lib/utils"
 import { Filter, Users, X, Plus, Minus } from "lucide-react"
+import React, { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EnhancedMultiSelect } from "@/components/enhanced-multi-select"
 import { SavedFiltersManager } from "@/components/saved-filters-manager"
+import { cn } from "@/lib/utils"
 import type { Filters, AvailableOptions, BlankCounts, FilterValue } from "@/lib/types"
 
 interface FiltersSidebarProps {
@@ -24,6 +24,129 @@ interface FiltersSidebarProps {
   handleLoadSavedFilters: (savedFilters: Filters) => void
 }
 
+type ValueFilterKey =
+  | "prospectAccountNames"
+  | "prospectRnxtDataTypes"
+  | "prospectProjectNames"
+  | "prospectDupeStatuses"
+  | "prospectSfTalStatuses"
+  | "prospectSfIndustries"
+  | "prospectContactsTypes"
+  | "prospectDepartments"
+  | "prospectLevels"
+  | "prospectOptizmoSuppressions"
+  | "prospectCities"
+  | "prospectCountries"
+
+type IncludeBlankKey =
+  | "includeBlankAccountNames"
+  | "includeBlankRnxtDataTypes"
+  | "includeBlankProjectNames"
+  | "includeBlankDupeStatuses"
+  | "includeBlankSfTalStatuses"
+  | "includeBlankSfIndustries"
+  | "includeBlankContactsTypes"
+  | "includeBlankDepartments"
+  | "includeBlankLevels"
+  | "includeBlankOptizmoSuppressions"
+  | "includeBlankCities"
+  | "includeBlankCountries"
+
+type ValueFilterConfig = {
+  key: ValueFilterKey
+  includeBlankKey: IncludeBlankKey
+  optionsKey: keyof AvailableOptions
+  label: string
+  placeholder: string
+}
+
+const VALUE_FILTERS: ValueFilterConfig[] = [
+  {
+    key: "prospectAccountNames",
+    includeBlankKey: "includeBlankAccountNames",
+    optionsKey: "prospectAccountNames",
+    label: "Account Name",
+    placeholder: "Select account names...",
+  },
+  {
+    key: "prospectRnxtDataTypes",
+    includeBlankKey: "includeBlankRnxtDataTypes",
+    optionsKey: "prospectRnxtDataTypes",
+    label: "RNXT Data Type",
+    placeholder: "Select data types...",
+  },
+  {
+    key: "prospectProjectNames",
+    includeBlankKey: "includeBlankProjectNames",
+    optionsKey: "prospectProjectNames",
+    label: "Project Name",
+    placeholder: "Select project names...",
+  },
+  {
+    key: "prospectDupeStatuses",
+    includeBlankKey: "includeBlankDupeStatuses",
+    optionsKey: "prospectDupeStatuses",
+    label: "Dupe Status",
+    placeholder: "Select dupe statuses...",
+  },
+  {
+    key: "prospectSfTalStatuses",
+    includeBlankKey: "includeBlankSfTalStatuses",
+    optionsKey: "prospectSfTalStatuses",
+    label: "SF TAL Status",
+    placeholder: "Select SF TAL statuses...",
+  },
+  {
+    key: "prospectSfIndustries",
+    includeBlankKey: "includeBlankSfIndustries",
+    optionsKey: "prospectSfIndustries",
+    label: "SF Industry",
+    placeholder: "Select SF industries...",
+  },
+  {
+    key: "prospectContactsTypes",
+    includeBlankKey: "includeBlankContactsTypes",
+    optionsKey: "prospectContactsTypes",
+    label: "Contacts Type",
+    placeholder: "Select contact types...",
+  },
+  {
+    key: "prospectDepartments",
+    includeBlankKey: "includeBlankDepartments",
+    optionsKey: "prospectDepartments",
+    label: "Department",
+    placeholder: "Select departments...",
+  },
+  {
+    key: "prospectLevels",
+    includeBlankKey: "includeBlankLevels",
+    optionsKey: "prospectLevels",
+    label: "Level",
+    placeholder: "Select levels...",
+  },
+  {
+    key: "prospectOptizmoSuppressions",
+    includeBlankKey: "includeBlankOptizmoSuppressions",
+    optionsKey: "prospectOptizmoSuppressions",
+    label: "Optizmo Suppression",
+    placeholder: "Select suppression statuses...",
+  },
+  {
+    key: "prospectCities",
+    includeBlankKey: "includeBlankCities",
+    optionsKey: "prospectCities",
+    label: "City",
+    placeholder: "Select cities...",
+  },
+  {
+    key: "prospectCountries",
+    includeBlankKey: "includeBlankCountries",
+    optionsKey: "prospectCountries",
+    label: "Country",
+    placeholder: "Select countries...",
+  },
+]
+
 export function FiltersSidebar({
   filters,
   pendingFilters,
@@ -35,94 +158,7 @@ export function FiltersSidebar({
   exportState,
   getTotalActiveFilters,
   handleLoadSavedFilters,
-}: FiltersSidebarProps) {
-  const valueFilters = [
-    {
-      key: "prospectAccountNames",
-      includeBlankKey: "includeBlankAccountNames",
-      optionsKey: "prospectAccountNames",
-      label: "Account Name",
-      placeholder: "Select account names...",
-    },
-    {
-      key: "prospectRnxtDataTypes",
-      includeBlankKey: "includeBlankRnxtDataTypes",
-      optionsKey: "prospectRnxtDataTypes",
-      label: "RNXT Data Type",
-      placeholder: "Select data types...",
-    },
-    {
-      key: "prospectProjectNames",
-      includeBlankKey: "includeBlankProjectNames",
-      optionsKey: "prospectProjectNames",
-      label: "Project Name",
-      placeholder: "Select project names...",
-    },
-    {
-      key: "prospectDupeStatuses",
-      includeBlankKey: "includeBlankDupeStatuses",
-      optionsKey: "prospectDupeStatuses",
-      label: "Dupe Status",
-      placeholder: "Select dupe statuses...",
-    },
-    {
-      key: "prospectSfTalStatuses",
-      includeBlankKey: "includeBlankSfTalStatuses",
-      optionsKey: "prospectSfTalStatuses",
-      label: "SF TAL Status",
-      placeholder: "Select SF TAL statuses...",
-    },
-    {
-      key: "prospectSfIndustries",
-      includeBlankKey: "includeBlankSfIndustries",
-      optionsKey: "prospectSfIndustries",
-      label: "SF Industry",
-      placeholder: "Select SF industries...",
-    },
-    {
-      key: "prospectContactsTypes",
-      includeBlankKey: "includeBlankContactsTypes",
-      optionsKey: "prospectContactsTypes",
-      label: "Contacts Type",
-      placeholder: "Select contact types...",
-    },
-    {
-      key: "prospectDepartments",
-      includeBlankKey: "includeBlankDepartments",
-      optionsKey: "prospectDepartments",
-      label: "Department",
-      placeholder: "Select departments...",
-    },
-    {
-      key: "prospectLevels",
-      includeBlankKey: "includeBlankLevels",
-      optionsKey: "prospectLevels",
-      label: "Level",
-      placeholder: "Select levels...",
-    },
-    {
-      key: "prospectOptizmoSuppressions",
-      includeBlankKey: "includeBlankOptizmoSuppressions",
-      optionsKey: "prospectOptizmoSuppressions",
-      label: "Optizmo Suppression",
-      placeholder: "Select suppression statuses...",
-    },
-    {
-      key: "prospectCities",
-      includeBlankKey: "includeBlankCities",
-      optionsKey: "prospectCities",
-      label: "City",
-      placeholder: "Select cities...",
-    },
-    {
-      key: "prospectCountries",
-      includeBlankKey: "includeBlankCountries",
-      optionsKey: "prospectCountries",
-      label: "Country",
-      placeholder: "Select countries...",
-    },
-  ] as const
-
+}: FiltersSidebarProps): JSX.Element {
   return (
     <div className="border-r bg-sidebar overflow-y-auto overflow-x-hidden w-[360px] shrink-0 relative">
       <div className="p-3 space-y-3">
@@ -148,7 +184,7 @@ export function FiltersSidebar({
           </div>
 
           <div className="space-y-3">
-            {valueFilters.map((filterConfig) => {
+            {VALUE_FILTERS.map((filterConfig) => {
               const selected = pendingFilters[filterConfig.key] as FilterValue[]
               const includeBlank = pendingFilters[filterConfig.includeBlankKey] as boolean
               const options = availableOptions[filterConfig.optionsKey] || []
@@ -199,15 +235,17 @@ export function FiltersSidebar({
   )
 }
 
+interface TitleKeywordInputProps {
+  keywords: FilterValue[]
+  onChange: (keywords: FilterValue[]) => void
+  placeholder?: string
+}
+
 function TitleKeywordInput({
   keywords,
   onChange,
   placeholder = "e.g., Manager, Director, VP...",
-}: {
-  keywords: FilterValue[]
-  onChange: (keywords: FilterValue[]) => void
-  placeholder?: string
-}) {
+}: TitleKeywordInputProps): JSX.Element {
   const [inputValue, setInputValue] = useState("")
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

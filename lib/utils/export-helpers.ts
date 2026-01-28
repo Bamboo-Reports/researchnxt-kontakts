@@ -3,7 +3,11 @@ import * as XLSX from "xlsx"
 /**
  * Export data to Excel file
  */
-export const exportToExcel = (data: any[], filename: string, sheetName: string) => {
+export const exportToExcel = <T extends object>(
+  data: T[],
+  filename: string,
+  sheetName: string
+): void => {
   try {
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.json_to_sheet(data)
