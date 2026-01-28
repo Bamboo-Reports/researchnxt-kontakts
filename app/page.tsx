@@ -17,7 +17,8 @@ function DashboardContent() {
   const router = useRouter()
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [pageLoading, setPageLoading] = useState(true)
-  const [filterLoading, setFilterLoading] = useState(true)
+  const [countsLoading, setCountsLoading] = useState(true)
+  const [optionsLoading, setOptionsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<string>("")
   const [dbStatus, setDbStatus] = useState<any>(null)
@@ -117,6 +118,7 @@ function DashboardContent() {
   const exportPageSize = 500
   const [isExporting, setIsExporting] = useState(false)
   const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null)
+  const filterLoading = countsLoading || optionsLoading
 
   const checkDatabaseStatus = useCallback(async () => {
     try {
@@ -218,18 +220,15 @@ function DashboardContent() {
     }
   }, [currentPage, itemsPerPage, filters, ensureConnection])
 
-  const loadFilterData = useCallback(async () => {
-    console.time("dashboard loadFilterData total")
+  const loadCounts = useCallback(async () => {
+    console.time("dashboard loadCounts total")
     try {
-      setFilterLoading(true)
+      setCountsLoading(true)
       const connectionOk = await ensureConnection()
       if (!connectionOk) return
 
-      setConnectionStatus("Loading filters and counts...")
-      const [counts, options] = await Promise.all([
-        getCounts({ filters }),
-        getFilterOptions({ filters }),
-      ])
+      setConnectionStatus("Loading counts...")
+      const counts = await getCounts({ filters })
 
       if (counts.error) {
         setError(`Database error: ${counts.error}`)
@@ -237,14 +236,37 @@ function DashboardContent() {
         return
       }
 
+      setFilteredCount(counts.filteredCount ?? 0)
+      setTotalCount(counts.totalCount ?? 0)
+    } catch (err) {
+      console.error("Error loading counts:", err)
+      const errorMessage = err instanceof Error ? err.message : "Failed to load data from database"
+      setError(errorMessage)
+      setConnectionStatus("Database connection failed")
+    } finally {
+      setCountsLoading(false)
+      console.timeEnd("dashboard loadCounts total")
+    }
+  }, [filters, ensureConnection])
+
+  const loadFilterOptions = useCallback(async (filtersOverride?: Filters) => {
+    console.time("dashboard loadFilterOptions total")
+    try {
+      setOptionsLoading(true)
+      const connectionOk = await ensureConnection()
+      if (!connectionOk) return
+
+      setConnectionStatus("Loading filter options...")
+      const options = await getFilterOptions(
+        filtersOverride ? { filters: filtersOverride } : undefined
+      )
+
       if (options.error) {
         setError(`Database error: ${options.error}`)
         setConnectionStatus("Filter options loading failed")
         return
       }
 
-      setFilteredCount(counts.filteredCount ?? 0)
-      setTotalCount(counts.totalCount ?? 0)
       setAvailableOptions(
         options.availableOptions || {
           prospectAccountNames: [],
@@ -278,15 +300,15 @@ function DashboardContent() {
         }
       )
     } catch (err) {
-      console.error("Error loading filter data:", err)
+      console.error("Error loading filter options:", err)
       const errorMessage = err instanceof Error ? err.message : "Failed to load data from database"
       setError(errorMessage)
       setConnectionStatus("Database connection failed")
     } finally {
-      setFilterLoading(false)
-      console.timeEnd("dashboard loadFilterData total")
+      setOptionsLoading(false)
+      console.timeEnd("dashboard loadFilterOptions total")
     }
-  }, [filters, ensureConnection])
+  }, [ensureConnection])
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
@@ -322,8 +344,13 @@ function DashboardContent() {
 
   useEffect(() => {
     if (!authReady || !userId) return
-    loadFilterData()
-  }, [authReady, userId, filters, loadFilterData])
+    loadFilterOptions()
+  }, [authReady, userId, loadFilterOptions])
+
+  useEffect(() => {
+    if (!authReady || !userId) return
+    loadCounts()
+  }, [authReady, userId, filters, loadCounts])
 
   useEffect(() => {
     if (!authReady || !userId) return
@@ -357,8 +384,11 @@ function DashboardContent() {
     try {
       setConnectionStatus("Clearing cache...")
       await clearCache()
-      await loadFilterData()
-      await loadPageData()
+      await Promise.all([
+        loadFilterOptions(filters),
+        loadCounts(),
+        loadPageData(),
+      ])
     } catch (err) {
       console.error("Error clearing cache:", err)
       setError("Failed to clear cache")
@@ -367,9 +397,12 @@ function DashboardContent() {
 
   const handleRetry = useCallback(async () => {
     setError(null)
-    await loadFilterData()
-    await loadPageData()
-  }, [loadFilterData, loadPageData])
+    await Promise.all([
+      loadFilterOptions(filters),
+      loadCounts(),
+      loadPageData(),
+    ])
+  }, [filters, loadFilterOptions, loadCounts, loadPageData])
 
   const getTotalActiveFilters = () => {
     return (

@@ -52,7 +52,7 @@ const InfoRow = ({
   if (!value) return null
 
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg bg-background/40 backdrop-blur-sm border border-border/50 hover:border-border transition-colors dark:bg-white/5 dark:border-white/10 dark:backdrop-blur-md dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
+    <div className="flex items-start gap-3 p-3 rounded-lg bg-background/40 backdrop-blur-sm border border-border/50 hover:border-border dark:bg-white/5 dark:border-white/10 dark:backdrop-blur-md dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
       <div className="mt-0.5">
         <Icon className="h-4 w-4 text-muted-foreground" />
       </div>
@@ -68,7 +68,7 @@ const InfoRow = ({
               className="inline-flex items-center justify-between gap-2 text-sm font-medium text-primary hover:underline break-words"
             >
               <span>{displayValue ?? value}</span>
-              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-border/60 text-primary hover:bg-accent transition-colors shrink-0">
+              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-border/60 text-primary hover:bg-accent shrink-0">
                 <linkIcon className="h-4 w-4" />
               </span>
             </a>

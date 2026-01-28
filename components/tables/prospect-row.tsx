@@ -18,7 +18,7 @@ export const ProspectRow = memo(({ prospect, onClick }: ProspectRowProps) => {
 
   return (
     <TableRow
-      className="cursor-pointer hover:bg-muted/50 transition-colors"
+      className="cursor-pointer hover:bg-muted/50"
       onClick={onClick}
     >
       <TableCell>

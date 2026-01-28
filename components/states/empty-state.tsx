@@ -47,7 +47,7 @@ export function EmptyState({
   const { icon: Icon, defaultTitle, defaultDescription, iconColor } = config[type]
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center animate-fade-in">
+    <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
       <div className={`mb-6 p-6 rounded-full bg-muted/50 ${iconColor}`}>
         <Icon className="h-16 w-16" strokeWidth={1.5} />
       </div>
@@ -58,7 +58,7 @@ export function EmptyState({
         {description || defaultDescription}
       </p>
       {action && (
-        <Button onClick={action.onClick} variant="default" className="animate-scale-in">
+        <Button onClick={action.onClick} variant="default">
           {action.label}
         </Button>
       )}

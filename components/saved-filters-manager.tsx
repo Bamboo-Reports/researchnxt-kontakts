@@ -461,7 +461,7 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
               savedFilters.map((filter) => (
                 <DropdownMenuItem key={filter.id} className="flex items-center justify-between p-0 group">
                   <button
-                    className="flex-1 flex items-center justify-between px-2 py-2 hover:bg-accent rounded-sm text-left transition-colors"
+                    className="flex-1 flex items-center justify-between px-2 py-2 hover:bg-accent rounded-sm text-left"
                     onClick={() => handleLoadFilter(filter)}
                   >
                     <span className="font-medium text-sm truncate max-w-[180px]">{filter.name}</span>
@@ -472,7 +472,7 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-foreground hover:text-destructive hover:bg-destructive/10 mr-1 transition-all"
+                    className="h-7 w-7 text-foreground hover:text-destructive hover:bg-destructive/10 mr-1"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleDeleteFilter(filter)
@@ -509,7 +509,7 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
               variant="outline"
               size="icon"
               disabled={totalActiveFilters === 0}
-              className="h-9 w-9 rounded-full shrink-0 bg-background hover:bg-primary hover:text-primary-foreground border-input/50 transition-all shadow-sm"
+              className="h-9 w-9 rounded-full shrink-0 bg-background hover:bg-primary hover:text-primary-foreground border-input/50 shadow-sm"
               title="Save current filters"
             >
               <Save className="h-4 w-4" />
@@ -554,7 +554,7 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
               variant="secondary"
               size="sm"
               onClick={onReset}
-              className="w-full h-8 text-xs font-medium bg-secondary/50 hover:bg-secondary/80 text-secondary-foreground border border-transparent hover:border-border/50 transition-all"
+              className="w-full h-8 text-xs font-medium bg-secondary/50 hover:bg-secondary/80 text-secondary-foreground border border-transparent hover:border-border/50"
             >
               Reset
             </Button>
@@ -565,7 +565,7 @@ export const SavedFiltersManager = memo(function SavedFiltersManager({
               size="sm"
               onClick={onExport}
               disabled={exportState?.isExporting}
-              className="w-full h-8 text-xs font-medium shadow-none hover:shadow-sm transition-all"
+              className="w-full h-8 text-xs font-medium shadow-none hover:shadow-sm"
             >
               {exportState?.isExporting
                 ? exportState.progress?.total
