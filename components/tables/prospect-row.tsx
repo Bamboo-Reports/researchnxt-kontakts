@@ -1,15 +1,21 @@
 import { memo } from "react"
+import type { CSSProperties } from "react"
+import { cn } from "@/lib/utils"
 import { TableRow, TableCell } from "@/components/ui/table"
 import type { Prospect } from "@/lib/types"
 
 interface ProspectRowProps {
   prospect: Prospect
   onClick: () => void
+  className?: string
+  style?: CSSProperties
 }
 
 export const ProspectRow = memo(function ProspectRow({
   prospect,
   onClick,
+  className,
+  style,
 }: ProspectRowProps): JSX.Element {
   const fullName = [prospect.first_name, prospect.last_name].filter(Boolean).join(" ")
   const initials = fullName
@@ -21,8 +27,9 @@ export const ProspectRow = memo(function ProspectRow({
 
   return (
     <TableRow
-      className="cursor-pointer hover:bg-muted/50"
+      className={cn("cursor-pointer transition-colors hover:bg-muted/50", className)}
       onClick={onClick}
+      style={style}
     >
       <TableCell>
         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">

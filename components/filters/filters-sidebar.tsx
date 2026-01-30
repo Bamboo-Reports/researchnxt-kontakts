@@ -1,6 +1,6 @@
 "use client"
 
-import { Filter, Users, X, Plus, Minus } from "lucide-react"
+import { Filter, Users, X, Plus, Minus, ChevronDown } from "lucide-react"
 import React, { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -86,8 +86,8 @@ const VALUE_FILTERS: ValueFilterConfig[] = [
     key: "prospectDupeStatuses",
     includeBlankKey: "includeBlankDupeStatuses",
     optionsKey: "prospectDupeStatuses",
-    label: "Dupe Status",
-    placeholder: "Select dupe statuses...",
+    label: "Contact Email Status",
+    placeholder: "Select contact email statuses...",
   },
   {
     key: "prospectSfTalStatuses",
@@ -107,8 +107,8 @@ const VALUE_FILTERS: ValueFilterConfig[] = [
     key: "prospectContactsTypes",
     includeBlankKey: "includeBlankContactsTypes",
     optionsKey: "prospectContactsTypes",
-    label: "Contacts Type",
-    placeholder: "Select contact types...",
+    label: "Company Type",
+    placeholder: "Select company types...",
   },
   {
     key: "prospectDepartments",
@@ -159,8 +159,47 @@ export function FiltersSidebar({
   getTotalActiveFilters,
   handleLoadSavedFilters,
 }: FiltersSidebarProps): JSX.Element {
+  const [openGroups, setOpenGroups] = useState<Set<"prospect" | "salesforce">>(
+    () => new Set(["prospect", "salesforce"])
+  )
+
+  const toggleGroup = (group: "prospect" | "salesforce") => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(group)) {
+        next.delete(group)
+      } else {
+        next.add(group)
+      }
+      return next
+    })
+  }
+
+  const prospectOrder: Array<ValueFilterKey | "titleKeywords"> = [
+    "prospectAccountNames",
+    "prospectRnxtDataTypes",
+    "prospectContactsTypes",
+    "prospectProjectNames",
+    "prospectDupeStatuses",
+    "titleKeywords",
+    "prospectDepartments",
+    "prospectLevels",
+    "prospectCities",
+    "prospectCountries",
+  ]
+
+  const salesforceOrder: ValueFilterKey[] = [
+    "prospectSfTalStatuses",
+    "prospectSfIndustries",
+    "prospectOptizmoSuppressions",
+  ]
+
+  const filterMap = new Map<ValueFilterKey, ValueFilterConfig>(
+    VALUE_FILTERS.map((filter) => [filter.key, filter])
+  )
+
   return (
-    <div className="border-r bg-sidebar overflow-y-auto overflow-x-hidden w-[360px] shrink-0 relative">
+    <div className="border-r bg-sidebar overflow-y-auto overflow-x-hidden w-[360px] shrink-0 relative animate-slide-in">
       <div className="p-3 space-y-3">
         <div className="flex flex-col gap-2 mb-3 pb-3 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
@@ -184,49 +223,149 @@ export function FiltersSidebar({
           </div>
 
           <div className="space-y-3">
-            {VALUE_FILTERS.map((filterConfig) => {
-              const selected = pendingFilters[filterConfig.key] as FilterValue[]
-              const includeBlank = pendingFilters[filterConfig.includeBlankKey] as boolean
-              const options = availableOptions[filterConfig.optionsKey] || []
-              const blankCount = blankCounts[filterConfig.optionsKey] || 0
-              const showIncludeBlanks = includeBlank || blankCount > 0
-              return (
-                <div className="space-y-2" key={filterConfig.key}>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium">{filterConfig.label}</Label>
-                    {showIncludeBlanks && (
-                      <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                        <Checkbox
-                          checked={includeBlank}
-                          onCheckedChange={(checked) =>
-                            setPendingFilters((prev) => ({
-                              ...prev,
-                              [filterConfig.includeBlankKey]: checked === true,
-                            }))
-                          }
-                        />
-                        <span>Include blanks</span>
-                      </label>
+            <div className="rounded-lg border border-sidebar-border/70 bg-sidebar/30">
+              <button
+                className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-sidebar-accent/40"
+                onClick={() => toggleGroup("prospect")}
+                type="button"
+              >
+                <div className="flex items-center gap-2">
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-muted-foreground transition-transform",
+                      openGroups.has("prospect") && "rotate-180"
                     )}
-                  </div>
-                  <EnhancedMultiSelect
-                    options={options}
-                    selected={selected}
-                    onChange={(nextSelected) => {
-                      setPendingFilters((prev) => ({ ...prev, [filterConfig.key]: nextSelected }))
-                    }}
-                    placeholder={filterConfig.placeholder}
                   />
+                  <span className="text-xs font-semibold text-foreground">Prospect Attributes</span>
                 </div>
-              )
-            })}
-            <div className="space-y-2 pt-3 border-t border-border">
-              <Label className="text-xs font-medium">Title Keywords</Label>
-              <TitleKeywordInput
-                keywords={pendingFilters.prospectTitleKeywords}
-                onChange={(keywords) => setPendingFilters((prev) => ({ ...prev, prospectTitleKeywords: keywords }))}
-                placeholder="e.g., Manager, Director, VP..."
-              />
+                <span className="text-[10px] text-muted-foreground">
+                  {openGroups.has("prospect") ? "Hide" : "Show"}
+                </span>
+              </button>
+              {openGroups.has("prospect") && (
+                <div className="space-y-3 px-3 pb-3 animate-slide-down">
+                  {prospectOrder.map((key) => {
+                    if (key === "titleKeywords") {
+                      return (
+                        <div className="space-y-2" key="titleKeywords">
+                          <Label className="text-xs font-medium">Title Keywords</Label>
+                          <TitleKeywordInput
+                            keywords={pendingFilters.prospectTitleKeywords}
+                            onChange={(keywords) =>
+                              setPendingFilters((prev) => ({ ...prev, prospectTitleKeywords: keywords }))
+                            }
+                            placeholder="e.g., Manager, Director, VP..."
+                          />
+                        </div>
+                      )
+                    }
+
+                    const filterConfig = filterMap.get(key)
+                    if (!filterConfig) return null
+
+                    const selected = pendingFilters[filterConfig.key] as FilterValue[]
+                    const includeBlank = pendingFilters[filterConfig.includeBlankKey] as boolean
+                    const options = availableOptions[filterConfig.optionsKey] || []
+                    const blankCount = blankCounts[filterConfig.optionsKey] || 0
+                    const showIncludeBlanks = includeBlank || blankCount > 0
+
+                    return (
+                      <div className="space-y-2" key={filterConfig.key}>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium">{filterConfig.label}</Label>
+                          {showIncludeBlanks && (
+                            <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                              <Checkbox
+                                checked={includeBlank}
+                                onCheckedChange={(checked) =>
+                                  setPendingFilters((prev) => ({
+                                    ...prev,
+                                    [filterConfig.includeBlankKey]: checked === true,
+                                  }))
+                                }
+                              />
+                              <span>Include blanks</span>
+                            </label>
+                          )}
+                        </div>
+                        <EnhancedMultiSelect
+                          options={options}
+                          selected={selected}
+                          onChange={(nextSelected) => {
+                            setPendingFilters((prev) => ({ ...prev, [filterConfig.key]: nextSelected }))
+                          }}
+                          placeholder={filterConfig.placeholder}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-sidebar-border/70 bg-sidebar/30">
+              <button
+                className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-sidebar-accent/40"
+                onClick={() => toggleGroup("salesforce")}
+                type="button"
+              >
+                <div className="flex items-center gap-2">
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-muted-foreground transition-transform",
+                      openGroups.has("salesforce") && "rotate-180"
+                    )}
+                  />
+                  <span className="text-xs font-semibold text-foreground">Salesforce Attributes</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  {openGroups.has("salesforce") ? "Hide" : "Show"}
+                </span>
+              </button>
+              {openGroups.has("salesforce") && (
+                <div className="space-y-3 px-3 pb-3 animate-slide-down">
+                  {salesforceOrder.map((key) => {
+                    const filterConfig = filterMap.get(key)
+                    if (!filterConfig) return null
+
+                    const selected = pendingFilters[filterConfig.key] as FilterValue[]
+                    const includeBlank = pendingFilters[filterConfig.includeBlankKey] as boolean
+                    const options = availableOptions[filterConfig.optionsKey] || []
+                    const blankCount = blankCounts[filterConfig.optionsKey] || 0
+                    const showIncludeBlanks = includeBlank || blankCount > 0
+
+                    return (
+                      <div className="space-y-2" key={filterConfig.key}>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium">{filterConfig.label}</Label>
+                          {showIncludeBlanks && (
+                            <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                              <Checkbox
+                                checked={includeBlank}
+                                onCheckedChange={(checked) =>
+                                  setPendingFilters((prev) => ({
+                                    ...prev,
+                                    [filterConfig.includeBlankKey]: checked === true,
+                                  }))
+                                }
+                              />
+                              <span>Include blanks</span>
+                            </label>
+                          )}
+                        </div>
+                        <EnhancedMultiSelect
+                          options={options}
+                          selected={selected}
+                          onChange={(nextSelected) => {
+                            setPendingFilters((prev) => ({ ...prev, [filterConfig.key]: nextSelected }))
+                          }}
+                          placeholder={filterConfig.placeholder}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

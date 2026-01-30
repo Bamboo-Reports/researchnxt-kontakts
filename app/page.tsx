@@ -336,6 +336,11 @@ function DashboardContent(): JSX.Element | null {
 
   useEffect(() => {
     if (!authReady || !userId) return
+    loadFilterOptions(filters)
+  }, [authReady, userId, filters, loadFilterOptions])
+
+  useEffect(() => {
+    if (!authReady || !userId) return
     loadCounts()
   }, [authReady, userId, filters, loadCounts])
 
