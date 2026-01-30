@@ -40,11 +40,11 @@ export const SummaryCards = React.memo(function SummaryCards({
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-4 mb-6">
+    <div className="grid grid-cols-1 gap-4 mb-6 animate-fade-in">
       {cards.map((card) => (
         <Card
           key={card.title}
-          className="relative overflow-hidden border border-border/60 bg-gradient-to-br from-background/90 via-background to-background shadow-[0_15px_50px_-35px_rgba(0,0,0,0.6)] dark:shadow-[0_20px_65px_-45px_rgba(0,0,0,0.85)]"
+          className="relative overflow-hidden border border-border/60 bg-gradient-to-br from-background/90 via-background to-background shadow-[0_15px_50px_-35px_rgba(0,0,0,0.6)] dark:shadow-[0_20px_65px_-45px_rgba(0,0,0,0.85)] animate-scale-in"
         >
           <div
             className="pointer-events-none absolute inset-0 opacity-90"

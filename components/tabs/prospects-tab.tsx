@@ -116,7 +116,7 @@ export function ProspectsTab({
   }
 
   return (
-    <div>
+    <div className="animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <PieChartIcon className="h-5 w-5 text-[hsl(var(--chart-1))]" />
@@ -127,7 +127,7 @@ export function ProspectsTab({
       </div>
 
       {/* Data Table */}
-      <Card className="flex flex-col h-[calc(100vh-18rem)] border shadow-sm relative">
+      <Card className="flex flex-col h-[calc(100vh-18rem)] border shadow-sm relative animate-slide-up">
         <CardHeader className="shrink-0 px-6 py-4">
           <div className="flex flex-wrap items-center gap-3">
             <CardTitle className="text-lg">Prospects Data</CardTitle>
@@ -179,6 +179,8 @@ export function ProspectsTab({
                         key={`${prospect.email}-${index}`}
                         prospect={prospect}
                         onClick={() => handleProspectClick(prospect)}
+                        className="animate-fade-in"
+                        style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
                       />
                     ))}
               </TableBody>
